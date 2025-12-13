@@ -1,0 +1,19 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+.env
+.DS_Store
+
+# React
+client/node_modules/
+client/build/
+client/.env
+
+# Server
+server/node_modules/
+server/.env
+
+# Optional: logs
+logs/
+*.log
