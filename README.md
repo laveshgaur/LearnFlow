@@ -30,7 +30,7 @@ It allows students to browse courses, enroll, and track progress. Instructors ca
 - **Backend:** Node.js, Express.js  
 - **Database:** MongoDB (local or Atlas)  
 - **Auth:** JWT, bcrypt  
-- **Deployment:** Optional (Netlify / Vercel / Render)
+<!-- - **Deployment:** Optional (Netlify / Vercel / Render) -->
 
 ---
 
