@@ -24,6 +24,9 @@
   font-size: 16px;
   text-decoration: none;
 }
+.navbar div a:hover{
+  color: #b27575;
+}
 .signup{
   background-color: #ccb761;
   border-radius: 4px;
@@ -31,4 +34,16 @@
 }
 .signup:hover{
   opacity: 0.8;
+}
+.home{
+  padding: 20px;
+  margin: 20px auto;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 900px;
+}
+.home h2{
+  font-size: 22px;
+  margin: 4px auto;
+  padding: 8px;
 }

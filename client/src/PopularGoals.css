@@ -1,0 +1,22 @@
+.goals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.goals a{
+  text-decoration: none;
+
+}
+.goal-card{
+  margin: 4px;
+  padding:40px;
+  font-size: 20px;
+  border-radius: 8px;
+  border: 1px solid #eeeaea;
+  transition: all .3s ease;
+}
+.goal-card:hover{
+  background-color: #fbf4f4;
+}
