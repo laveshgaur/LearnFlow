@@ -23,17 +23,18 @@
   padding: 5px 10px;
   font-size: 16px;
   text-decoration: none;
+  transition: color 0.5s ease;
 }
 .navbar div a:hover{
-  color: #b27575;
+  color: #faf4f4;
 }
 .signup{
   background-color: #ccb761;
   border-radius: 4px;
-  transition: background-color 0.8s ease;
+  transition: background-color 0.5s ease;
 }
 .signup:hover{
-  opacity: 0.8;
+  background-color: #b6a049;
 }
 .home{
   padding: 20px;

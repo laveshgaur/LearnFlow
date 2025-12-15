@@ -1,3 +1,4 @@
+import Login from "./Login";
 import PopularGoals from "./PopularGoals";
 
 const Home = () => {
@@ -5,6 +6,7 @@ const Home = () => {
     <div className="home">
       <h2>Popular Goals</h2>
       <PopularGoals />
+      {/* <Login /> */}
     </div>
   )
 }
