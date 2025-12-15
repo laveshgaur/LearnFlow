@@ -23,15 +23,15 @@
   padding: 5px 10px;
   font-size: 16px;
   text-decoration: none;
-  transition: color 0.5s ease;
+  transition: color 0.2s ease;
 }
 .navbar div a:hover{
-  color: #faf4f4;
+  color: #686767;
 }
 .signup{
   background-color: #ccb761;
   border-radius: 4px;
-  transition: background-color 0.5s ease;
+  transition: all 0.2s ease;
 }
 .signup:hover{
   background-color: #b6a049;
