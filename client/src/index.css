@@ -28,12 +28,12 @@
 .navbar div a:hover{
   color: #686767;
 }
-.signup{
+.signup-link{
   background-color: #ccb761;
   border-radius: 4px;
   transition: all 0.2s ease;
 }
-.signup:hover{
+.signup-link:hover{
   background-color: #b6a049;
 }
 .home{

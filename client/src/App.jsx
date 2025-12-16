@@ -1,6 +1,6 @@
 import './index.css';
 import './PopularGoals.css';
-import './Login.css'
+import './form.css'
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 function App() {

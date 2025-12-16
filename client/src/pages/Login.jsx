@@ -1,6 +1,6 @@
 const Login = () => {
   return (
-    <div className="login">
+    <div className="form" id="login-page">
       <h2>Login</h2>
       <label htmlFor="email">Email Address</label>
       <input type="text" id="email" placeholder="Enter Your Email"/>
