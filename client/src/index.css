@@ -1,10 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
-/* base styles */
+
 *{
   margin: 0;
   font-family: "Quicksand";
   color: #333;
 }
+
 .navbar{
   padding: 20px;
   margin: 0 auto;
@@ -12,30 +13,40 @@
   align-items: center;
   justify-content: space-between;
   max-width: 900px;
-  /* background-color: rgb(165, 142, 142); */
   border-bottom: 1px solid rgb(173, 152, 152);
 }
+
 .navbar h1{
   font-size: 20px;
 }
-.navbar div a{
+
+.navbar .links{
+  display: flex;
+  align-items: center;
+}
+
+.navbar .links a{
   margin: 2px 6px;
   padding: 5px 10px;
   font-size: 16px;
   text-decoration: none;
   transition: color 0.2s ease;
 }
-.navbar div a:hover{
+
+.navbar .links a:hover{
   color: #686767;
 }
+
 .signup-link{
   background-color: #ccb761;
   border-radius: 4px;
   transition: all 0.2s ease;
 }
+
 .signup-link:hover{
   background-color: #b6a049;
 }
+
 .home{
   padding: 20px;
   margin: 20px auto;
@@ -43,6 +54,7 @@
   justify-content: space-between;
   max-width: 900px;
 }
+
 .home h2{
   font-size: 22px;
   margin: 4px auto;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 const PopularGoals = () => {
   const [goals,setGoals] = useState([
     {title: "UPSC CSE - GS"},
@@ -12,10 +13,10 @@ const PopularGoals = () => {
   ])
   return (
     <div className="goals">
-      {goals.map((goal) => (
-        <a href="/">
+      {goals.map((goal, index) => (
+        <Link to="/login" key={index}>
           <div className="goal-card">{goal.title}</div>
-        </a>
+        </Link>
       ))}
     </div>
   )

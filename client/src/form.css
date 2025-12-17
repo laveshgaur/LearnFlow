@@ -8,6 +8,10 @@
   border: 1px solid #5a3e3e;
   max-width: 600px;
 }
+.form h2{
+  margin: auto;
+  padding: 4px;
+}
 .form input{
   margin: 10px 0px;
   padding: 8px;
