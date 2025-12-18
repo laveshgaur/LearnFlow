@@ -1,6 +1,6 @@
 .form{
-  margin: 20px auto;
-  padding: 20px;
+  margin: 50px auto;
+  padding: 40px;
   display: flex;
   flex-direction: column;
   /* background-color: antiquewhite; */
@@ -27,7 +27,7 @@
   color: #999;
 }
 .loginButton{
-  margin: 10px auto;
+  margin: 20px auto;
   min-width: 100px;
   min-height: 40px;
   font-size: 18px;
@@ -58,7 +58,7 @@
   
 }
 .signup-button{
-  margin: 10px auto;
+  margin: 20px auto;
   min-width: 100px;
   min-height: 40px;
   border-radius: 4px;
