@@ -3,49 +3,43 @@
 *{
   margin: 0;
   font-family: "Quicksand";
-  color: #333;
+  color: #a3a3a3;
+  background-color: #3c3c3c;
 }
 
 .navbar{
-  padding: 20px;
+  padding: 10px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   /* max-width: 900px; */
-  border-bottom: 1px solid rgb(173, 152, 152);
+  border-bottom: 1px solid rgb(123, 123, 123);
+  background-color: #4e4e4e;
 }
 
-.navbar h1{
-  font-size: 20px;
-}
-
-.navbar .links{
-  display: flex;
-  align-items: center;
-}
-
-.navbar .links a{
-  margin: 2px 6px;
-  padding: 5px 10px;
+.links a{
+  margin: 2px 4px;
+  padding: 8px;
   font-size: 16px;
   text-decoration: none;
-  transition: color 0.2s ease;
+  border-radius: 20px;
+  transition: background-color 0.3s ease,color ;
 }
 
-.navbar .links a:hover{
-  color: #686767;
+.links a:hover{
+  color: #e8e8e8;
+  background-color: #6b6b6b;
 }
 
-.signup-link{
-  background-color: #ccb761;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+.elements{
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 20px;
 }
 
-.signup-link:hover{
-  background-color: #b6a049;
-}
 
 .home{
   padding: 20px;
