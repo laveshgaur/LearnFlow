@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 const SignUp = () => {
   return (
-    <div className="form" id="signup-page">
+    <form className="form" id="signup-page">
       <h2>SignUp</h2>
       <label htmlFor="name">Enter Your Name</label>
       <input type="text" id="name" placeholder="Enter Your Name"/>
@@ -12,7 +12,7 @@ const SignUp = () => {
       <input type="password" id="password" placeholder="Enter Your Password"/>
       <button className="signup-button">SignUp</button>
       <p>Already have an account? <Link to="/login">Login</Link></p>
-    </div>
+    </form>
   )
 }
 export default SignUp;
