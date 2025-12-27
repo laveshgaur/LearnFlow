@@ -17,7 +17,9 @@
   border-bottom: 1px solid rgb(123, 123, 123);
   background-color: #4e4e4e;
 }
-
+.links{
+  background-color: inherit;
+}
 .links a{
   margin: 2px 4px;
   padding: 8px;
@@ -38,7 +40,10 @@
   align-items: center;
   justify-content: space-between;
   border-radius: 20px;
+  background-color: #4e4e4e;
+  border: 1px solid #808080;
   transition: transform 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 .elements:hover{

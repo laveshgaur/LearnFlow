@@ -8,6 +8,7 @@
   border-radius: 6px;
   border: 1px solid #545353;
   max-width: 600px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease;
 }
 
