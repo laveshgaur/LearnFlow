@@ -8,7 +8,13 @@
   border-radius: 6px;
   border: 1px solid #545353;
   max-width: 600px;
+  transition: transform 0.3s ease;
 }
+
+.form:hover{
+  transform: scale(1.01);
+}
+
 h2{
   margin: auto;
   padding: 4px;

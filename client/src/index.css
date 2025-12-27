@@ -3,7 +3,7 @@
 *{
   margin: 0;
   font-family: "Quicksand";
-  color: #a3a3a3;
+  color: white;
   background-color: #3c3c3c;
 }
 
@@ -38,8 +38,12 @@
   align-items: center;
   justify-content: space-between;
   border-radius: 20px;
+  transition: transform 0.3s ease;
 }
 
+.elements:hover{
+  transform: scale(1.02);
+}
 
 .home{
   padding: 20px;
