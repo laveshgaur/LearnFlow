@@ -1,6 +1,3 @@
-import './index.css';
-import './PopularGoals.css';
-import './form.css'
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from "./pages/Login";
