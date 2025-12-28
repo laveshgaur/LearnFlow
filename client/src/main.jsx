@@ -5,6 +5,7 @@ import './css/index.css';
 import './css/PopularGoals.css';
 import './css/form.css';
 import './css/sidebar.css';
+import './css/dashboard.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

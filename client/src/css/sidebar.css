@@ -1,15 +1,9 @@
 .sidebar{
-  position: fixed;
-  left: 0px;
-  top: 66px;
-  bottom: 0px;
-  padding: 8px;
-  border-right: 1px solid white;
-}
-.sidebar div{
-  margin: auto;
   display: flex;
   flex-direction: column;
+  padding: 8px;
+  border-right: 1px solid white;
+  height: 100%;
 }
 .sidebar a{
   margin: 6px 20px;
@@ -26,16 +20,17 @@
 }
 
 .app-layout {
-  display: flex;
-  min-height: 100vh;
-}
-
-.sidebar {
-  width: 200px;
-  flex-shrink: 0;
+  display: grid;
+  position: fixed;
+  top: 66px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: 1fr; 
 }
 
 .main-content {
-  flex: 1;
   padding: 20px;
+  overflow-y: auto;
 }

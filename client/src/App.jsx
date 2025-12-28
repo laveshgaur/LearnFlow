@@ -11,7 +11,6 @@ function App() {
     <Router>
       <div className="App">
         <Navbar />
-        <Sidebar />
         <Routes>
           {/* Route with sidebar */}
           <Route element={
