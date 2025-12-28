@@ -3,7 +3,7 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
       <div>
-        <Link to="/">DashBoard</Link>
+        <Link to="/dashboard">DashBoard</Link>
         <Link>All Courses</Link>
         <Link>My Courses</Link>
         <Link>About Me</Link>

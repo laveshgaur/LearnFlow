@@ -1,11 +1,13 @@
-import Sidebar from "../components/Sidebar";
 import PopularGoals from "./PopularGoals";
+
+import { Outlet } from 'react-router-dom';
+
 const Home = () => {
   return (
     <div className="home">
       {/* <h2>Popular Goals</h2> */}
       {/* <PopularGoals /> */}
-      { <Sidebar />}
+      <Outlet />
     </div>
   )
 }

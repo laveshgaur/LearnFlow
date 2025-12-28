@@ -24,3 +24,18 @@
   transform: scale(1.02);
   background-color: #4e4e4e;
 }
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+}
