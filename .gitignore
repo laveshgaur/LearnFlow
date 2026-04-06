@@ -1,0 +1,20 @@
+# === IDE ===
+.idea/
+.vscode/
+*.iml
+
+# === Backend (Java / Maven) ===
+Backend/target/
+Backend/.mvn/wrapper/maven-wrapper.jar
+
+# === Frontend (Node / Vite) ===
+Frontend/node_modules/
+Frontend/dist/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Env ===
+*.env
+*.env.local

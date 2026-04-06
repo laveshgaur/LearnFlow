@@ -1,0 +1,79 @@
+:root {
+  --bg-deep: #0a0712;
+  --bg: #100b1a;
+  --bg-elevated: #161022;
+  --surface: #1e1830;
+  --surface-hover: #262038;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #f4f1fa;
+  --text-muted: #9b92b0;
+  --accent: #e8a838;
+  --accent-hover: #f0bc54;
+  --violet: #a78bfa;
+  --violet-dim: #6d28d9;
+  --success: #4ade80;
+  --danger: #fb7185;
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 80px rgba(167, 139, 250, 0.12);
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+  --sidebar-w: 260px;
+  font-family: var(--font-sans);
+  line-height: 1.55;
+  font-weight: 400;
+  color: var(--text);
+  background-color: var(--bg-deep);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--violet);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88em;
+}
+
+::selection {
+  background: rgba(232, 168, 56, 0.35);
+  color: var(--text);
+}
