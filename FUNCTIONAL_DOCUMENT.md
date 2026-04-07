@@ -1,182 +1,192 @@
-# Functional Document - LearnFlow LMS
+# 📘 Functional Document – LearnFlow LMS
 
 ## 1) Purpose
-This document defines the functional behavior of the LearnFlow Learning Management System (LMS), based on the current implementation and the upcoming AI-based learner help feature.
+This document explains **what LearnFlow does and how users interact with it**. It describes system features in a simple way, including a future AI assistant to help learners.
+
+---
 
 ## 2) Project Scope
-LearnFlow currently supports:
-- User registration and authentication
-- Role-based access control (`ADMIN`, `INSTRUCTOR`, `USER`)
-- Public course catalog browsing
-- Instructor course management (create, view own courses, update, delete)
-- User course purchase
-- Admin user listing
 
-Planned scope addition:
-- AI assistant for answering course-related learner questions
+### ✅ Current Features
+LearnFlow allows:
+- Users to create accounts and log in  
+- Different roles (Admin, Instructor, User)  
+- Viewing available courses  
+- Instructors to manage their courses  
+- Users to purchase courses  
+- Admin to view all users  
+
+### 🚀 Upcoming Feature
+- AI assistant to answer learner questions related to courses  
+
+---
 
 ## 3) User Roles
-- `Guest` (unauthenticated): can create account and view course list
-- `User`: can update own profile context and purchase courses
-- `Instructor`: can manage own courses
-- `Admin`: can view all users
+
+### 👤 Guest
+- Can view courses  
+- Can create an account  
+
+### 👤 User (Student)
+- Can update profile  
+- Can purchase courses  
+- Can access AI assistant (after purchasing course)  
+
+### 👨‍🏫 Instructor
+- Can create, update, and delete own courses  
+
+### 🛠 Admin
+- Can view all users  
+
+---
 
 ## 4) Functional Modules
 
-### 4.1 Authentication and Authorization
-- System uses HTTP Basic authentication.
-- Passwords are stored as BCrypt hashes.
-- Access control rules:
-  - Public:
-    - `POST /create-user`
-    - `GET /courses` and `GET /courses/**`
-  - Authenticated users:
-    - `/user/**`
-  - Instructor only:
-    - `/instructor/**`
-  - Admin only:
-    - `/admin/**`
+### 4.1 User Registration & Login
+- Users can create an account  
+- Users can log in securely  
+- System identifies user role after login  
 
-### 4.2 User Management
-- `POST /create-user`
-  - Creates a new user.
-  - Sets:
-    - `createdAt` to current timestamp
-    - `roles` default to `USER`
-    - encrypted password
-- `PUT /user`
-  - Updates the currently logged-in user context.
-  - Returns updated user data.
+---
 
-### 4.3 Course Catalog
-- `GET /courses`
-  - Returns all available courses.
-  - Response:
-    - `200 OK` with course list when available
-    - `204 No Content` when no courses exist
+### 4.2 Course Browsing
+- Anyone can view course list  
+- Courses include:
+  - Name  
+  - Description  
+  - Price  
+  - Duration  
 
-### 4.4 Instructor Course Management
-- `GET /instructor/get-courses`
-  - Returns courses owned by the logged-in instructor.
-- `POST /instructor/create-course`
-  - Creates a new course tied to the logged-in instructor.
-  - Auto-fills `courseCreatedAt` and `courseUpdatedAt` if absent.
-- `PUT /instructor/update-course/{courseId}`
-  - Updates a course only if it belongs to the logged-in instructor.
-  - Refreshes `courseUpdatedAt`.
-- `DELETE /instructor/delete-course/{courseId}`
-  - Deletes a course only if it belongs to the logged-in instructor.
+---
 
-### 4.5 Course Purchase
-- `POST /user/purchase-course/{courseId}`
-  - Allows authenticated user to purchase a course.
-  - Validates course existence.
-  - Links purchased course to current user.
+### 4.3 Course Management (Instructor)
+- Instructor can:
+  - Create course  
+  - View own courses  
+  - Update course  
+  - Delete course  
 
-### 4.6 Admin Operations
-- `GET /admin`
-  - Returns all users in the platform.
-  - Response:
-    - `200 OK` with data
-    - `204 No Content` when user list is empty
+---
 
-## 5) Data Entities
+### 4.4 Course Purchase (User)
+- User can purchase available courses  
+- Purchased courses are linked to user account  
 
-### 5.1 User
-- `id` (UUID)
-- `userName`
-- `email` (unique)
-- `age`
-- `password` (write-only in API, hashed in DB)
-- `createdAt`
-- `roles` (list of role names)
-- `courses` (owned/purchased relation)
+---
 
-### 5.2 Courses
-- `courseId` (auto-increment)
-- `courseName`
-- `courseDescription`
-- `courseDuration`
-- `coursePrice`
-- `courseImage`
-- `courseStatus`
-- `courseCreatedAt`
-- `courseUpdatedAt`
-- `user` (owner/instructor relation)
+### 4.5 Admin Features
+- Admin can view all registered users  
 
-## 6) Non-Functional Expectations
-- Security:
-  - BCrypt hashing for passwords
-  - Role-gated endpoints
-- Compatibility:
-  - CORS allows local frontend origins (`localhost:5173`, `localhost:4173`)
-- API style:
-  - REST endpoints with status-code based responses
+---
 
-## 7) Planned Feature: AI Assistant for Course Questions
+## 5) AI Assistant (Future Feature)
 
-### 7.1 Goal
-Provide a built-in AI assistant that answers learner questions specifically related to course content, reducing instructor support load and increasing learner engagement.
+### 🎯 Goal
+Help students by answering course-related questions instantly.
 
-### 7.2 Target Users
-- Primary: `USER` learners enrolled in a course
-- Secondary (future): `INSTRUCTOR` for content QA preview
+### 👥 Who Can Use It
+- Only users who purchased the course  
 
-### 7.3 Functional Requirements
-- FR-AI-01: Learner can ask natural language questions from a course page.
-- FR-AI-02: System answers using only relevant course content/context.
-- FR-AI-03: System stores question-answer history per user and course.
-- FR-AI-04: System shows fallback message when confidence is low.
-- FR-AI-05: Learner can flag an answer as helpful/not helpful.
-- FR-AI-06: Instructor can review flagged AI responses (future admin tool).
+### ⚙️ Features
+- Ask questions in simple language  
+- Get answers based on course content  
+- View previous questions and answers  
+- Give feedback (helpful / not helpful)  
+- System shows fallback if unsure  
 
-### 7.4 Suggested API Contract (Future)
-- `POST /user/courses/{courseId}/ai/ask`
-  - Request:
-    - `question`
-  - Response:
-    - `answer`
-    - `confidence`
-    - `sources` (optional references)
-- `GET /user/courses/{courseId}/ai/history`
-  - Returns user conversation history for that course.
-- `POST /user/courses/{courseId}/ai/feedback`
-  - Captures helpful/not-helpful and optional comment.
+---
 
-### 7.5 Validation and Access Rules
-- Only authenticated users can use AI endpoints.
-- User must have purchased/enrolled in the course before asking AI questions.
-- Input validation:
-  - empty question rejected
-  - max question length enforced
-- Rate limits per user to prevent abuse.
+## 6) Rules & Conditions
+- Only logged-in users can perform actions  
+- AI can be used only after course purchase  
+- Users cannot access others' data  
+- System protects user information  
 
-### 7.6 AI Safety and Quality Rules
-- Restrict answers to course domain/context.
-- Avoid hallucination by returning "I do not know from this course content" when needed.
-- Never return sensitive user or system data.
-- Log prompts/responses for quality monitoring (with privacy controls).
+---
 
-## 8) Acceptance Criteria (Current + AI Phase)
-- AC-01: New user can register and login successfully.
-- AC-02: Guest can view course catalog.
-- AC-03: Instructor can create, update, delete only own courses.
-- AC-04: User can purchase existing course.
-- AC-05: Admin can fetch user list.
-- AC-06 (AI): Purchased user can ask course question and receive response.
-- AC-07 (AI): Unenrolled user cannot access AI endpoint for that course.
-- AC-08 (AI): AI fallback appears when answer confidence is low.
+## 7) Acceptance Criteria
 
-## 9) Out of Scope (Current Phase)
-- Payment gateway integration
-- Multi-language AI responses
-- Advanced analytics dashboard for AI interactions
-- Real-time voice assistant
+System is successful if:
+- User can register and log in  
+- Courses are visible to everyone  
+- Instructor manages only own courses  
+- User can purchase course  
+- Admin can see user list  
+- AI answers course-related questions  
+- AI blocks users without course access  
 
-## 10) Recommended Next Implementation Steps for AI
-1. Add enrollment check utility for AI endpoint authorization.
-2. Create `AiQueryController` and `AiQueryService`.
-3. Add persistence model for AI chat history and feedback.
-4. Integrate an LLM provider through configurable service layer.
-5. Add monitoring, rate limiting, and test coverage.
+---
 
+## 8) Out of Scope
+(Not included right now)
+- Online payments  
+- Multiple languages  
+- Voice assistant  
+- Advanced analytics  
+
+---
+
+# 🔄 Flowcharts
+
+## 1) User Registration & Login Flow
+
+```mermaid
+flowchart TD
+A[Start] --> B[Open System]
+B --> C{Has Account?}
+C -->|No| D[Register]
+C -->|Yes| E[Login]
+D --> F[Account Created]
+F --> G[Dashboard]
+E --> H{Valid Credentials?}
+H -->|Yes| G[Dashboard]
+H -->|No| I[Show Error]
+```
+## 2) Course Purchase Flow
+
+```mermaid
+flowchart TD
+A[Start] --> B[User Login]
+B --> C[Browse Courses]
+C --> D[Select Course]
+D --> E[Purchase Course]
+E --> F[Course Added to Account]
+F --> G[End]
+```
+## 3) Instructor Course Management Flow
+```mermaid
+flowchart TD
+A[Start] --> B[Instructor Login]
+B --> C[Choose Action]
+C --> D[Create / Update / Delete]
+D --> E[Verify Ownership]
+E --> F[Action Completed]
+F --> G[End]
+```
+## 4) AI Assistant Flow
+
+```mermaid
+flowchart TD
+A[Start] --> B[Open Purchased Course]
+B --> C[Ask Question]
+C --> D[Check Access]
+D -->|No| E[Show Error]
+D -->|Yes| F[Generate Answer]
+F --> G{Answer Available?}
+G -->|Yes| H[Show Answer]
+G -->|No| I[Show Fallback]
+H --> J[Save History]
+J --> K[User Feedback]
+K --> L[End]
+I --> L
+```
+
+## 5) Admin Flow
+```mermaid
+flowchart TD
+A[Start] --> B[Admin Login]
+B --> C[View Users]
+C --> D[Display User List]
+D --> E[End]
+```
+```
