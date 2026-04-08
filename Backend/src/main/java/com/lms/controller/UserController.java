@@ -3,6 +3,7 @@ package com.lms.controller;
 import com.lms.model.User;
 import com.lms.service.CourseService;
 import com.lms.service.UserService;
+import com.lms.service.ValidityChecker;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,21 @@ public class UserController {
         if(authentication == null || !authentication.isAuthenticated()){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
+        if(!ValidityChecker.isValidSqlInjection(authentication.getName())){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        if(!ValidityChecker.isValidXSS(authentication.getName())){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        if(!ValidityChecker.isValidCSRF(authentication.getName())){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        if(!ValidityChecker.isValidHeader(authentication.getName())){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        if(!ValidityChecker.isValidFooter(authentication.getName())){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
         String username = authentication.getName();
         if(username == null || username.isEmpty()){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -42,6 +58,21 @@ public class UserController {
     @PostMapping("/purchase-course/{courseId}")
     public ResponseEntity<?> purchaseCourse(@PathVariable int courseId){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(!ValidityChecker.isValidSqlInjection(authentication.getName())){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        if(!ValidityChecker.isValidXSS(authentication.getName())){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        if(!ValidityChecker.isValidCSRF(authentication.getName())){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        if(!ValidityChecker.isValidHeader(authentication.getName())){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        if(!ValidityChecker.isValidFooter(authentication.getName())){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
         if(authentication == null || !authentication.isAuthenticated()){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
