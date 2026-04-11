@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,18 +21,26 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-    @Column(name = "username",nullable = false)
+
+    @Column(name = "username", nullable = false)
     private String userName;
+
     @Column(nullable = false, unique = true)
     private String email;
+
     private int age;
+
     @Column(name = "password_hash", nullable = false)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
-    @Column(name = "created_at")
+
+    @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @ElementCollection
     private List<String> roles;
+
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
-    private List<Courses> courses;
+    private List<Course> courses;
 }

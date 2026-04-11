@@ -1,6 +1,9 @@
 package com.lms.model;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class Courses {
+public class Course {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int courseId;
@@ -31,6 +34,16 @@ public class Courses {
     private String courseCreatedAt;
     @Column(name = "course_updated_at", nullable = false)
     private String courseUpdatedAt;
+
+    @OneToMany(mappedBy = "course")
+    @JsonManagedReference
+    private List<Module> modules;
+
+    @ManyToOne
+    @JoinColumn(name = "instructor_id")
+    private User instructor;
+
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     @JsonBackReference

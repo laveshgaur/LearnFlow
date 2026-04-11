@@ -1,6 +1,6 @@
 package com.lms.controller;
 
-import com.lms.model.Courses;
+import com.lms.model.Course;
 import com.lms.model.User;
 import com.lms.service.CourseService;
 import com.lms.service.UserService;
@@ -36,11 +36,11 @@ public class InstructorController {
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        List<Courses> courses = courseService.getCoursesByUserId(user.getId());
+        List<Course> courses = courseService.getCoursesByUserId(user.getId());
         return new ResponseEntity<>(courses, HttpStatus.OK);
     }
     @PostMapping("/create-course")
-    public ResponseEntity<?> createCourse(@RequestBody Courses course) {
+    public ResponseEntity<?> createCourse(@RequestBody Course course) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -71,7 +71,7 @@ public class InstructorController {
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        Courses existing = courseService.getCourseById(courseId);
+        Course existing = courseService.getCourseById(courseId);
         if (existing == null || existing.getUser() == null || !existing.getUser().getId().equals(user.getId())) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
@@ -80,7 +80,7 @@ public class InstructorController {
     }
 
     @PutMapping("/update-course/{courseId}")
-    public ResponseEntity<?> updateCourse(@PathVariable int courseId, @RequestBody Courses incoming) {
+    public ResponseEntity<?> updateCourse(@PathVariable int courseId, @RequestBody Course incoming) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -93,7 +93,7 @@ public class InstructorController {
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        Courses existing = courseService.getCourseById(courseId);
+        Course existing = courseService.getCourseById(courseId);
         if (existing == null || existing.getUser() == null || !existing.getUser().getId().equals(user.getId())) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }

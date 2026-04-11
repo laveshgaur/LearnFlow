@@ -1,6 +1,6 @@
 package com.lms.controller;
 
-import com.lms.model.Courses;
+import com.lms.model.Course;
 import com.lms.service.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,8 +18,8 @@ public class CourseController {
     @Autowired
     private CourseService courseService;
     @GetMapping
-    public ResponseEntity<List<Courses>> listCourses() {
-        List<Courses> courses = courseService.getAllCourses();
+    public ResponseEntity<List<Course>> listCourses() {
+        List<Course> courses = courseService.getAllCourses();
         if (courses == null || courses.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
