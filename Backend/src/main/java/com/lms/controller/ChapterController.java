@@ -5,7 +5,6 @@ import com.lms.model.Module;
 import com.lms.model.User;
 import com.lms.service.ChapterService;
 import com.lms.service.ModuleService;
-import com.lms.service.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
