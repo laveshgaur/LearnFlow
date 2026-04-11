@@ -25,9 +25,6 @@ public class ChapterController {
     @Autowired
     private ModuleService moduleService;
 
-    @Autowired
-    private UserService userService;
-
     // -------------------- HELPER METHODS --------------------
 
     private boolean isInstructor(User user) {
