@@ -31,14 +31,15 @@ public class ModuleController {
         return ResponseEntity.ok(moduleService.createModule(module));
     }
 
-    @PutMapping
-    public ResponseEntity<Module> updateModule(@PathVariable int courseId, @RequestBody Module module) {
+    @PutMapping("/{moduleId}")
+    public ResponseEntity<Module> updateModule(@PathVariable int courseId, @PathVariable int moduleId, @RequestBody Module module) {
         module.setCourse(courseService.getCourseById(courseId));
+        module.setModuleId(moduleId);
         return ResponseEntity.ok(moduleService.updateModule(module));
     }
 
-    @DeleteMapping
-    public ResponseEntity<Void> deleteModules(@PathVariable int moduleId) {
+    @DeleteMapping("/{moduleId}")
+    public ResponseEntity<Void> deleteModules(@PathVariable int courseId, @PathVariable int moduleId) {
         moduleService.deleteModule(moduleId);
         return ResponseEntity.noContent().build();
     }

@@ -6,8 +6,9 @@ import { getProfile, healthCheck } from '../api/client.js'
 function ProfileSummary({ user }) {
   if (!user) return <p className="muted">No profile loaded.</p>
   const roles = Array.isArray(user.roles) ? user.roles.join(', ') : '—'
-  const courses = Array.isArray(user.courses) ? user.courses.length : 0
+  const courses = Array.isArray(user.courses) ? user.courses : []
   return (
+    <>
     <dl className="profile-grid">
       <dt>Username</dt>
       <dd>{user.userName ?? '—'}</dd>
@@ -19,9 +20,23 @@ function ProfileSummary({ user }) {
       <dd>
         <span className="tag tag-outline">{roles}</span>
       </dd>
-      <dt>Courses (linked)</dt>
-      <dd>{courses}</dd>
     </dl>
+    {courses.length > 0 && (
+      <div style={{ marginTop: '1rem' }}>
+        <h3>Your Courses</h3>
+        <ul className="stack">
+          {courses.map(c => (
+            <li key={c.courseId} className="card card-ghost" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{c.courseName}</span>
+              <Link to={`/course/${c.courseId}`} className="btn btn-primary btn-sm">
+                Study
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+    </>
   )
 }
 

@@ -37,7 +37,7 @@ public class User {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<String> roles;
 
     @OneToMany(mappedBy = "user")

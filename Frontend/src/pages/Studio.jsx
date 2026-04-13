@@ -222,6 +222,9 @@ export default function Studio() {
                           <button type="button" className="btn btn-ghost btn-sm danger-text" onClick={() => onDelete(c.courseId)}>
                             Delete
                           </button>
+                          <Link to={`/studio/course/${c.courseId}`} className="btn btn-ghost btn-sm">
+                            Manage Content
+                          </Link>
                         </td>
                       </tr>
                     ))}

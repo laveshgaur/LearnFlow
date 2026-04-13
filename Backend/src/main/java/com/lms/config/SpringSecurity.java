@@ -39,6 +39,7 @@ public class SpringSecurity {
                 .authenticationProvider(authenticationProvider)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/create-user").permitAll()
+                        .requestMatchers("/health-check").permitAll()
                         .requestMatchers(HttpMethod.GET, "/courses", "/courses/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/user/**").authenticated()
