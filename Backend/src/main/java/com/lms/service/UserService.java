@@ -24,10 +24,9 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User createAdmin(User user) {
+    public User createUserByAdmin(User user) {
         user.setCreatedAt(LocalDateTime.now());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRoles(Arrays.asList("ADMIN"));
         return userRepository.save(user);
     }
     public List<User> getAllUsers(){

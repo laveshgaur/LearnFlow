@@ -35,7 +35,7 @@ public class AdminController {
         if(currentUser == null || !currentUser.getRoles().stream().anyMatch(role -> role.equals("ROLE_ADMIN"))){
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        User createdUser = userService.createAdmin(user);
+        User createdUser = userService.createUserByAdmin(user);
         if(createdUser != null){
             return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
         }

@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 
@@ -21,13 +24,10 @@ public class Chapter {
     @Column(name = "chapter_description", nullable = false)
     private String chapterDescription;
     @Column(name = "chapter_duration", nullable = false)
-    private String chapterDuration;
-    @Column(name = "chapter_price", nullable = false)
-    private String chapterPrice;
-    @Column(name = "chapter_image", nullable = false)
-    private String chapterImage;
-    private String chapterCreatedAt;
-    private String chapterUpdatedAt;
+    private int durationInSeconds;
+    
+    private LocalDateTime chapterCreatedAt;
+    private LocalDateTime chapterUpdatedAt;
     @ManyToOne
     @JoinColumn(name = "module_id", nullable = false)
     @JsonBackReference
