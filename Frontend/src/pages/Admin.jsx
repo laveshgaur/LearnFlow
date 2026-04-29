@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
-import { listUsersAdmin } from '../api/client.js'
+import { listUsersAdmin, createUserAdmin } from '../api/client.js'
 
 export default function Admin() {
   const { credentials, isAuthenticated } = useAuth()
@@ -9,42 +9,66 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [empty, setEmpty] = useState(false)
+  
+  // New user form state
+  const [newUser, setNewUser] = useState({ userName: '', email: '', password: '', age: '', roles: 'USER' })
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const [createSuccess, setCreateSuccess] = useState('')
+
+  const fetchUsers = async () => {
+    setError('')
+    setEmpty(false)
+    setLoading(true)
+    try {
+      const data = await listUsersAdmin(credentials)
+      if (Array.isArray(data)) {
+        setUsers(data)
+        setEmpty(data.length === 0)
+      } else {
+        setUsers([])
+        setEmpty(true)
+      }
+    } catch (e) {
+      if (e.status === 403 || e.status === 401) {
+        setError('You need the ADMIN role to list users.')
+      } else {
+        setError(e.message || 'Could not load users.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!isAuthenticated || !credentials) {
       setLoading(false)
       return
     }
-    let cancelled = false
-    ;(async () => {
-      setError('')
-      setEmpty(false)
-      setLoading(true)
-      try {
-        const data = await listUsersAdmin(credentials)
-        if (!cancelled) {
-          if (Array.isArray(data)) {
-            setUsers(data)
-            setEmpty(data.length === 0)
-          } else {
-            setUsers([])
-            setEmpty(true)
-          }
-        }
-      } catch (e) {
-        if (e.status === 403 || e.status === 401) {
-          if (!cancelled) setError('You need the ADMIN role to list users.')
-        } else {
-          if (!cancelled) setError(e.message || 'Could not load users.')
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
+    fetchUsers()
   }, [isAuthenticated, credentials])
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault()
+    setCreating(true)
+    setCreateError('')
+    setCreateSuccess('')
+    try {
+      const payload = {
+        ...newUser,
+        age: parseInt(newUser.age, 10) || 0,
+        roles: newUser.roles.split(',').map(r => r.trim()).filter(Boolean)
+      }
+      await createUserAdmin(credentials, payload)
+      setCreateSuccess('User created successfully.')
+      setNewUser({ userName: '', email: '', password: '', age: '', roles: 'USER' })
+      fetchUsers()
+    } catch (err) {
+      setCreateError(err.message || 'Error creating user.')
+    } finally {
+      setCreating(false)
+    }
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
@@ -58,6 +82,67 @@ export default function Admin() {
           <code>GET /admin</code> — requires <code>ROLE_ADMIN</code> on the server.
         </p>
       </header>
+
+      <div className="card" style={{ marginBottom: '2rem' }}>
+        <h2>Create New User</h2>
+        {createError && <div className="alert alert-error">{createError}</div>}
+        {createSuccess && <div className="alert alert-success">{createSuccess}</div>}
+        <form onSubmit={handleCreateUser} style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', marginTop: '1rem' }}>
+          <div className="form-group" style={{ flex: '1 1 200px' }}>
+            <label>Username</label>
+            <input 
+              type="text" 
+              className="form-control" 
+              value={newUser.userName} 
+              onChange={e => setNewUser({ ...newUser, userName: e.target.value })} 
+              required 
+            />
+          </div>
+          <div className="form-group" style={{ flex: '1 1 200px' }}>
+            <label>Email</label>
+            <input 
+              type="email" 
+              className="form-control" 
+              value={newUser.email} 
+              onChange={e => setNewUser({ ...newUser, email: e.target.value })} 
+              required 
+            />
+          </div>
+          <div className="form-group" style={{ flex: '1 1 200px' }}>
+            <label>Password</label>
+            <input 
+              type="password" 
+              className="form-control" 
+              value={newUser.password} 
+              onChange={e => setNewUser({ ...newUser, password: e.target.value })} 
+              required 
+            />
+          </div>
+          <div className="form-group" style={{ flex: '1 1 80px' }}>
+            <label>Age</label>
+            <input 
+              type="number" 
+              className="form-control" 
+              value={newUser.age} 
+              onChange={e => setNewUser({ ...newUser, age: e.target.value })} 
+              required 
+            />
+          </div>
+          <div className="form-group" style={{ flex: '1 1 200px' }}>
+            <label>Roles (comma separated)</label>
+            <input 
+              type="text" 
+              className="form-control" 
+              value={newUser.roles} 
+              onChange={e => setNewUser({ ...newUser, roles: e.target.value })} 
+              placeholder="USER, ADMIN, INSTRUCTOR" 
+            />
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={creating}>
+            {creating ? 'Creating...' : 'Create User'}
+          </button>
+        </form>
+      </div>
 
       <div className="card">
         {loading ? <p className="muted">Loading directory…</p> : null}

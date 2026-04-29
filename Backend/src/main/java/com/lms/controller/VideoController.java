@@ -43,6 +43,21 @@ public class VideoController {
         if (module == null || module.getCourse().getCourseId() != courseId) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String username = authentication.getName();
+        if (username == null || username.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        User user = userService.getUserByUsername(username);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        if (!isOwner(user, module)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         List<Video> videos = videoService.getVideosByChapterId(chapterId);
         return ResponseEntity.ok(videos);

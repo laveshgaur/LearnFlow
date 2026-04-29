@@ -32,8 +32,11 @@ public class AdminController {
     public ResponseEntity<?> createUser(@RequestBody User user){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = userService.getUserByUsername(authentication.getName());
-        if(currentUser == null || !currentUser.getRoles().stream().anyMatch(role -> role.equals("ROLE_ADMIN"))){
+        if(currentUser == null || !currentUser.getRoles().stream().anyMatch(role -> role.equals("ADMIN"))){
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        if (user.getRoles() == null || user.getRoles().isEmpty()) {
+            user.setRoles(java.util.Arrays.asList("USER"));
         }
         User createdUser = userService.createUserByAdmin(user);
         if(createdUser != null){

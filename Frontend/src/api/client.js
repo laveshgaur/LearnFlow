@@ -67,6 +67,10 @@ export async function listUsersAdmin(auth) {
   return apiFetch('/admin', { auth })
 }
 
+export async function createUserAdmin(auth, payload) {
+  return apiFetch('/admin/create-user', { method: 'POST', auth, body: payload })
+}
+
 /** Authenticated learner — enroll / purchase */
 export async function purchaseCourse(auth, courseId) {
   return apiFetch(`/user/purchase-course/${courseId}`, { method: 'POST', auth })
