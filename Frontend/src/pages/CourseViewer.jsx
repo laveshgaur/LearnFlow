@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
-import { getModules, getChapters } from '../api/modules.js'
+import { getModules, getChapters, getVideos } from '../api/modules.js'
 
 export default function CourseViewer() {
   const { courseId } = useParams()
@@ -11,6 +11,7 @@ export default function CourseViewer() {
   const [activeModule, setActiveModule] = useState(null)
   const [chapters, setChapters] = useState([])
   const [activeChapter, setActiveChapter] = useState(null)
+  const [videos, setVideos] = useState([])
   const [error, setError] = useState('')
 
   const loadModules = useCallback(async () => {
@@ -44,6 +45,10 @@ export default function CourseViewer() {
 
   function handleChapterSelect(chap) {
     setActiveChapter(chap)
+    setVideos([])
+    getVideos(courseId, activeModule.moduleId, chap.chapterId, credentials)
+      .then(res => setVideos(Array.isArray(res) ? res : []))
+      .catch(console.error)
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
@@ -110,6 +115,21 @@ export default function CourseViewer() {
               <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
                 {activeChapter.chapterDescription || 'No content provided for this chapter.'}
               </div>
+              {videos.length > 0 && (
+                <div style={{ marginTop: '2rem' }}>
+                  <h3>Videos</h3>
+                  {videos.map(vid => (
+                    <div key={vid.id || vid.videoId} style={{ marginTop: '1rem' }}>
+                      <h4 style={{ marginBottom: '0.5rem' }}>{vid.videoTitle}</h4>
+                      <video 
+                        controls 
+                        style={{ width: '100%', maxWidth: '800px', backgroundColor: '#000', borderRadius: '4px' }}
+                        src={vid.videoUrl}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </article>
           )}
         </main>

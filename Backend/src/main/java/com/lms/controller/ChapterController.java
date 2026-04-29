@@ -5,11 +5,12 @@ import com.lms.model.Module;
 import com.lms.model.User;
 import com.lms.service.ChapterService;
 import com.lms.service.ModuleService;
+import com.lms.service.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,9 @@ public class ChapterController {
     @Autowired
     private ModuleService moduleService;
 
+    @Autowired
+    private UserService userService;
+
     // -------------------- HELPER METHODS --------------------
 
     private boolean isInstructor(User user) {
@@ -35,8 +39,8 @@ public class ChapterController {
     private boolean isOwner(User user, Module module) {
         return module != null
                 && module.getCourse() != null
-                && module.getCourse().getInstructor() != null
-                && module.getCourse().getInstructor().getId().equals(user.getId());
+                && module.getCourse().getUser() != null
+                && module.getCourse().getUser().getId().equals(user.getId());
     }
 
     private boolean isModuleValid(Module module, int courseId) {
@@ -70,7 +74,12 @@ public class ChapterController {
             @PathVariable int courseId,
             @PathVariable int moduleId,
             @RequestBody Chapter chapter,
-            @AuthenticationPrincipal User user) {
+            Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        User user = userService.getUserByUsername(authentication.getName());
 
         if (!isInstructor(user)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -101,7 +110,12 @@ public class ChapterController {
             @PathVariable int moduleId,
             @PathVariable int chapterId,
             @RequestBody Chapter chapter,
-            @AuthenticationPrincipal User user) {
+            Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        User user = userService.getUserByUsername(authentication.getName());
 
         if (!isInstructor(user)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -138,7 +152,12 @@ public class ChapterController {
             @PathVariable int courseId,
             @PathVariable int moduleId,
             @PathVariable int chapterId,
-            @AuthenticationPrincipal User user) {
+            Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        User user = userService.getUserByUsername(authentication.getName());
 
         if (!isInstructor(user)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

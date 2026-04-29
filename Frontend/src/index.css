@@ -1,29 +1,42 @@
 :root {
-  --bg-deep: #0a0712;
-  --bg: #100b1a;
-  --bg-elevated: #161022;
-  --surface: #1e1830;
-  --surface-hover: #262038;
+  --bg-deep: #09090b;
+  --bg: #18181b;
+  --bg-elevated: rgba(24, 24, 27, 0.5);
+  --surface: rgba(255, 255, 255, 0.03);
+  --surface-hover: rgba(255, 255, 255, 0.06);
   --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --text: #f4f1fa;
-  --text-muted: #9b92b0;
-  --accent: #e8a838;
-  --accent-hover: #f0bc54;
-  --violet: #a78bfa;
-  --violet-dim: #6d28d9;
-  --success: #4ade80;
-  --danger: #fb7185;
-  --radius-sm: 8px;
-  --radius: 14px;
-  --radius-lg: 20px;
+  --border-strong: rgba(255, 255, 255, 0.15);
+  
+  /* Glassmorphism primitives */
+  --glass-bg: rgba(24, 24, 27, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  --glass-blur: blur(20px);
+  -webkit-backdrop-filter: var(--glass-blur);
+
+  --text: #fafafa;
+  --text-muted: #a1a1aa;
+  
+  --accent: #2dd4bf;      /* Modern Teal */
+  --accent-hover: #5eead4;
+  --violet: #818cf8;      /* Indigo */
+  --violet-dim: #4f46e5;
+  --success: #10b981;
+  --danger: #f43f5e;
+  
+  --radius-sm: 12px;
+  --radius: 20px;
+  --radius-lg: 32px;
+  
   --shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
-  --shadow-glow: 0 0 80px rgba(167, 139, 250, 0.12);
-  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-display: 'Fraunces', Georgia, serif;
-  --sidebar-w: 260px;
+  --shadow-glow: 0 0 60px rgba(129, 140, 248, 0.15);
+  
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  --sidebar-w: 280px;
+
   font-family: var(--font-sans);
-  line-height: 1.55;
+  line-height: 1.6;
   font-weight: 400;
   color: var(--text);
   background-color: var(--bg-deep);
@@ -41,6 +54,30 @@
 body {
   margin: 0;
   min-height: 100vh;
+  /* Dark modern background with ambient glow */
+  background: radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.15), transparent 25%),
+              radial-gradient(circle at 85% 30%, rgba(45, 212, 191, 0.15), transparent 25%);
+  background-color: #09090b;
+  background-attachment: fixed;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 #root {

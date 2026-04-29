@@ -31,3 +31,7 @@ export async function updateChapter(courseId, moduleId, chapterId, auth, body) {
 export async function deleteChapter(courseId, moduleId, chapterId, auth) {
   return apiFetch(`/courses/${courseId}/modules/${moduleId}/chapters/${chapterId}`, { method: 'DELETE', auth })
 }
+
+export async function getVideos(courseId, moduleId, chapterId, auth) {
+  return apiFetch(`/courses/${courseId}/modules/${moduleId}/chapters/${chapterId}/videos`, { auth })
+}

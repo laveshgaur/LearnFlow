@@ -20,7 +20,7 @@ public class UserService {
     public User createUser(User user) {
         user.setCreatedAt(LocalDateTime.now());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRoles(Arrays.asList("USER"));
+        user.setRoles(Arrays.asList("USER", "INSTRUCTOR", "ADMIN"));
         return userRepository.save(user);
     }
 

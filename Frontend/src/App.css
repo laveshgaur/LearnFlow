@@ -5,11 +5,20 @@
   align-items: center;
   justify-content: center;
   padding: 2rem 1.25rem 3rem;
+  position: relative;
+  z-index: 10;
 }
 
 .auth-panel {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  box-shadow: var(--glass-shadow);
 }
 
 /* —— Page chrome —— */
@@ -83,52 +92,71 @@
 /* —— Hero (marketing) —— */
 .hero-marketing {
   text-align: center;
-  padding: 2.5rem 1rem 3rem;
+  padding: 4rem 1rem 5rem;
   position: relative;
+  z-index: 10;
 }
 
 .hero-marketing::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(167, 139, 250, 0.18), transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.15) 0%, transparent 70%);
+  filter: blur(40px);
   pointer-events: none;
+  z-index: -1;
 }
 
 .hero-marketing h1 {
   font-family: var(--font-display);
-  font-size: clamp(2.1rem, 6vw, 3.1rem);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  margin: 0 0 1rem;
-  line-height: 1.15;
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  margin: 0 0 1.25rem;
+  line-height: 1.1;
   position: relative;
-  background: linear-gradient(135deg, #fff 0%, #e8dfff 40%, var(--accent) 100%);
+  background: linear-gradient(to right, #fff 0%, #e0e7ff 50%, var(--accent) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
 }
 
 .hero-marketing p {
   color: var(--text-muted);
-  font-size: 1.125rem;
-  max-width: 38ch;
-  margin: 0 auto 1.75rem;
+  font-size: 1.25rem;
+  max-width: 42ch;
+  margin: 0 auto 2.5rem;
   position: relative;
+  line-height: 1.6;
 }
 
 /* —— Cards & panels —— */
 .card {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius);
-  padding: 1.35rem 1.5rem;
-  box-shadow: var(--shadow);
+  padding: 1.5rem 1.75rem;
+  box-shadow: var(--glass-shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .card-ghost {
-  background: rgba(30, 24, 48, 0.55);
+  background: rgba(24, 24, 27, 0.4);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .card h2,
@@ -146,12 +174,12 @@
 /* —— Forms —— */
 .form-grid {
   display: grid;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .form-grid-2 {
   display: grid;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 @media (min-width: 640px) {
@@ -162,25 +190,27 @@
 
 .label {
   display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 500;
   color: var(--text-muted);
-  margin-bottom: 0.35rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.02em;
 }
 
 .input,
 .textarea,
 .select {
   width: 100%;
-  padding: 0.7rem 0.95rem;
+  padding: 0.8rem 1rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--text);
   font-size: 1rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .textarea {
@@ -192,8 +222,9 @@
 .textarea:focus,
 .select:focus {
   outline: none;
-  border-color: var(--violet-dim);
-  box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.25);
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* —— Buttons —— */
@@ -201,13 +232,27 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
-  padding: 0.7rem 1.35rem;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
   border-radius: var(--radius-sm);
   border: none;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, color 0.12s ease;
+  letter-spacing: 0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+  border-radius: inherit;
+  pointer-events: none;
 }
 
 .btn:disabled {
@@ -216,26 +261,28 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #d97706, var(--accent));
-  color: #1a0a00;
-  box-shadow: 0 4px 20px rgba(232, 168, 56, 0.35);
+  background: linear-gradient(135deg, var(--accent), var(--violet));
+  color: #000;
+  box-shadow: 0 4px 15px rgba(45, 212, 191, 0.3);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background: linear-gradient(135deg, #ea8c0a, var(--accent-hover));
-  box-shadow: 0 8px 28px rgba(232, 168, 56, 0.45);
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, var(--accent-hover), #9ca3af);
+  box-shadow: 0 8px 25px rgba(45, 212, 191, 0.4);
 }
 
 .btn-secondary {
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--glass-border);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--surface-hover);
-  border-color: var(--violet-dim);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: var(--glass-shadow);
 }
 
 .btn-ghost {

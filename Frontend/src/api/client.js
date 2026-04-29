@@ -93,3 +93,39 @@ export async function updateInstructorCourse(auth, courseId, payload) {
 export async function deleteInstructorCourse(auth, courseId) {
   return apiFetch(`/instructor/delete-course/${courseId}`, { method: 'DELETE', auth })
 }
+
+export async function uploadVideo(auth, chapterId, title, file) {
+  const formData = new FormData()
+  formData.append('chapterId', chapterId)
+  formData.append('title', title)
+  formData.append('file', file)
+
+  const h = new Headers()
+  if (auth?.username && auth?.password) {
+    const token = btoa(`${auth.username}:${auth.password}`)
+    h.set('Authorization', `Basic ${token}`)
+  }
+  
+  const res = await fetch(getApiBase() + '/instructor/upload-video', {
+    method: 'POST',
+    headers: h,
+    body: formData
+  })
+  
+  const text = await res.text()
+  let data = null
+  if (text) {
+    try {
+      data = JSON.parse(text)
+    } catch {
+      data = text
+    }
+  }
+  if (!res.ok) {
+    const err = new Error(res.statusText || 'Request failed')
+    err.status = res.status
+    err.body = data
+    throw err
+  }
+  return data
+}

@@ -5,6 +5,7 @@ import {
   getModules, createModule, updateModule, deleteModule,
   getChapters, createChapter, updateChapter, deleteChapter 
 } from '../api/modules.js'
+import { uploadVideo } from '../api/client.js'
 
 export default function StudioCourse() {
   const { courseId } = useParams()
@@ -109,6 +110,8 @@ export default function StudioCourse() {
     }
   }
 
+  const [uploadingChapterId, setUploadingChapterId] = useState(null)
+
   async function handleDeleteChapter(chapId) {
     if (!window.confirm('Delete this chapter?')) return
     try {
@@ -116,6 +119,21 @@ export default function StudioCourse() {
       loadChapters(activeModule.moduleId)
     } catch (e) {
       setError(e.message || 'Error deleting chapter')
+    }
+  }
+
+  async function handleVideoUpload(e, chapId) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingChapterId(chapId);
+    try {
+      await uploadVideo(credentials, chapId, file.name, file);
+      alert('Video uploaded successfully!');
+      loadChapters(activeModule.moduleId);
+    } catch (err) {
+      setError(err.message || 'Error uploading video');
+    } finally {
+      setUploadingChapterId(null);
     }
   }
 
@@ -172,6 +190,20 @@ export default function StudioCourse() {
                     <li key={chap.chapterId} className="card">
                       <h3>{chap.chapterName}</h3>
                       <p className="muted">{chap.chapterDescription}</p>
+                      
+                      <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                        <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
+                          {uploadingChapterId === chap.chapterId ? 'Uploading...' : 'Upload Video'}
+                          <input 
+                            type="file" 
+                            accept="video/*" 
+                            style={{ display: 'none' }} 
+                            onChange={(e) => handleVideoUpload(e, chap.chapterId)}
+                            disabled={uploadingChapterId === chap.chapterId}
+                          />
+                        </label>
+                      </div>
+
                       <button type="button" className="btn btn-ghost btn-sm danger-text" onClick={() => handleDeleteChapter(chap.chapterId)}>
                         Delete
                       </button>
