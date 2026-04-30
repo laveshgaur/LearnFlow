@@ -9,6 +9,10 @@ import com.lms.service.CourseService;
 import com.lms.service.FileUploadService;
 import com.lms.service.UserService;
 import com.lms.service.VideoService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,38 +30,51 @@ import java.util.Map;
 @RequestMapping("/instructor")
 public class InstructorController {
 
+    private static final Logger logger = LoggerFactory.getLogger(InstructorController.class);
+
     @Autowired
     private CourseService courseService;
 
     @Autowired
     private FileUploadService fileUploadService;
+
     @Autowired
     private UserService userService;
 
     @Autowired
     private ChapterService chapterService;
-    
+
     @Autowired
     private VideoService videoService;
 
-    @GetMapping("/get-courses")
-    public ResponseEntity<?> getCourses() {
+   
+    private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
         if (authentication == null || !authentication.isAuthenticated()) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            return null;
         }
+
         String username = authentication.getName();
         if (username == null || username.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            return null;
         }
-        User user = userService.getUserByUsername(username);
-        if (user == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-        List<Course> courses = courseService.getCoursesByUserId(user.getId());
-        return new ResponseEntity<>(courses, HttpStatus.OK);
+
+        return userService.getUserByUsername(username);
     }
 
+    @GetMapping("/get-courses")
+    public ResponseEntity<?> getCourses() {
+        User user = getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<Course> courses = courseService.getCoursesByUserId(user.getId());
+        return ResponseEntity.ok(courses);
+    }
+
+    
     @PostMapping("/upload-video")
     public ResponseEntity<?> uploadVideo(
             @RequestParam int chapterId,
@@ -64,36 +82,37 @@ public class InstructorController {
             @RequestParam MultipartFile file) {
 
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
-
-            String username = authentication.getName();
-            User user = userService.getUserByUsername(username);
-
+            User user = getAuthenticatedUser();
             if (user == null) {
-                return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            // Validate chapter exists BEFORE uploading file
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body("File is empty");
+            }
+
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("video/")) {
+                return ResponseEntity.badRequest().body("Only video files are allowed");
+            }
+
+            
             Chapter chapter = chapterService.getChapterById(chapterId);
             if (chapter == null) {
-                return new ResponseEntity<>("Chapter not found", HttpStatus.NOT_FOUND);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Chapter not found");
             }
-
-            // Now upload file
+            
             String url = fileUploadService.uploadFile(file);
             if (url == null || url.isEmpty()) {
-                return new ResponseEntity<>("File upload failed", HttpStatus.INTERNAL_SERVER_ERROR);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("File upload failed");
             }
 
-            // Create and save video
+            // Save video
             Video video = new Video();
             video.setVideoTitle(title);
             video.setVideoUrl(url);
-            video.setDurationInSeconds(0);
+            video.setDurationInSeconds(0); // Placeholder, can be updated later
             video.setChapter(chapter);
 
             Video savedVideo = videoService.saveVideo(video);
@@ -104,82 +123,84 @@ public class InstructorController {
             response.put("url", savedVideo.getVideoUrl());
 
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
+            logger.error("Video upload error", e);
+
             Map<String, Object> error = new HashMap<>();
             error.put("error", "Upload failed: " + e.getMessage());
             error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-            System.err.println("Video upload error: " + e.getMessage());
-            e.printStackTrace();
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
+    
     @PostMapping("/create-course")
     public ResponseEntity<?> createCourse(@RequestBody Course course) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
-        String username = authentication.getName();
-        if (username == null || username.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
-        User user = userService.getUserByUsername(username);
+        User user = getAuthenticatedUser();
         if (user == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+
         course.setUser(user);
-        return new ResponseEntity<>(courseService.createCourse(course), HttpStatus.CREATED);
+        Course created = courseService.createCourse(course);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    
     @DeleteMapping("/delete-course/{courseId}")
     public ResponseEntity<?> deleteCourse(@PathVariable int courseId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
-        String username = authentication.getName();
-        if (username == null || username.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
-        User user = userService.getUserByUsername(username);
+        User user = getAuthenticatedUser();
         if (user == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+
         Course existing = courseService.getCourseById(courseId);
-        if (existing == null || existing.getUser() == null || !existing.getUser().getId().equals(user.getId())) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+
+        if (existing == null ||
+            existing.getUser() == null ||
+            !existing.getUser().getId().equals(user.getId())) {
+
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+
         courseService.deleteCourse(courseId);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
+    
     @PutMapping("/update-course/{courseId}")
-    public ResponseEntity<?> updateCourse(@PathVariable int courseId, @RequestBody Course incoming) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
-        String username = authentication.getName();
-        if (username == null || username.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
-        User user = userService.getUserByUsername(username);
+    public ResponseEntity<?> updateCourse(
+            @PathVariable int courseId,
+            @RequestBody Course incoming) {
+
+        User user = getAuthenticatedUser();
         if (user == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+
         Course existing = courseService.getCourseById(courseId);
-        if (existing == null || existing.getUser() == null || !existing.getUser().getId().equals(user.getId())) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+
+        if (existing == null ||
+            existing.getUser() == null ||
+            !existing.getUser().getId().equals(user.getId())) {
+
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+
+    
         existing.setCourseName(incoming.getCourseName());
         existing.setCourseDescription(incoming.getCourseDescription());
         existing.setCourseDuration(incoming.getCourseDuration());
         existing.setCoursePrice(incoming.getCoursePrice());
         existing.setCourseImage(incoming.getCourseImage());
         existing.setCourseStatus(incoming.getCourseStatus());
-        existing.setCourseUpdatedAt(java.time.OffsetDateTime.now().toString());
-        courseService.updateCourse(existing);
-        return new ResponseEntity<>(HttpStatus.OK);
+        existing.setCourseUpdatedAt(OffsetDateTime.now().toString());
+
+        Course updated = courseService.updateCourse(existing);
+
+        return ResponseEntity.ok(updated);
     }
 }
