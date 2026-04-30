@@ -12,10 +12,12 @@ public interface CourseRepository extends JpaRepository<Course, Integer> {
     Course findByCourseDuration(String courseDuration);
     Course findByCoursePrice(String coursePrice);
     Course findByCourseImage(String courseImage);
-    Course findByCourseStatus(String courseStatus);
+    List<Course> findByCourseStatus(String courseStatus);
     Course findByCourseCreatedAt(String courseCreatedAt);
     Course findByCourseUpdatedAt(String courseUpdatedAt);
+    List<Course> findByInstructor_Id(String instructorId);
     List<Course> findByUser_Id(String userId);
 
+    Course findByCourseIdAndInstructor_Id(int courseId, String instructorId);
     Course findByCourseIdAndUser_Id(int courseId, String userId);
 }

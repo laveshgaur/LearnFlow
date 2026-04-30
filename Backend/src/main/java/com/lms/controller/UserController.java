@@ -21,6 +21,7 @@ public class UserController {
     @Autowired
     private CourseService courseService;
 
+    @Transactional
     @PutMapping
     public ResponseEntity<User> createUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

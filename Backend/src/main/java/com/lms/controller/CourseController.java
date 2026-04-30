@@ -19,7 +19,7 @@ public class CourseController {
     private CourseService courseService;
     @GetMapping
     public ResponseEntity<List<Course>> listCourses() {
-        List<Course> courses = courseService.getAllCourses();
+        List<Course> courses = courseService.getPublishedCourses();
         if (courses == null || courses.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }

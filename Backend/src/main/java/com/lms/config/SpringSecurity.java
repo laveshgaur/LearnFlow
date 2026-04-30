@@ -46,7 +46,7 @@ public class SpringSecurity {
                         .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")
                         .anyRequest().authenticated()
                 )
-                .httpBasic();
+                .httpBasic(Customizer.withDefaults());
 
         http.csrf(csrf -> csrf.disable());
 

@@ -29,10 +29,13 @@ public class CourseService {
         return courseRepository.save(course);
     }
     public List<Course> getCoursesByUserId(String userId) {
-        return courseRepository.findByUser_Id(userId);
+        return courseRepository.findByInstructor_Id(userId);
     }
     public List<Course> getAllCourses(){
         return courseRepository.findAll();
+    }
+    public List<Course> getPublishedCourses(){
+        return courseRepository.findByCourseStatus("PUBLISHED");
     }
     public Course getCourseById(int courseId){
         return courseRepository.findById(courseId).orElse(null);

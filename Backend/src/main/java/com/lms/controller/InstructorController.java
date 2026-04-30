@@ -143,6 +143,7 @@ public class InstructorController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        course.setInstructor(user);
         course.setUser(user);
         Course created = courseService.createCourse(course);
 
@@ -160,8 +161,8 @@ public class InstructorController {
         Course existing = courseService.getCourseById(courseId);
 
         if (existing == null ||
-            existing.getUser() == null ||
-            !existing.getUser().getId().equals(user.getId())) {
+            existing.getInstructor() == null ||
+            !existing.getInstructor().getId().equals(user.getId())) {
 
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -184,8 +185,8 @@ public class InstructorController {
         Course existing = courseService.getCourseById(courseId);
 
         if (existing == null ||
-            existing.getUser() == null ||
-            !existing.getUser().getId().equals(user.getId())) {
+            existing.getInstructor() == null ||
+            !existing.getInstructor().getId().equals(user.getId())) {
 
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
