@@ -3,7 +3,6 @@ package com.lms.controller;
 import com.lms.model.User;
 import com.lms.service.CourseService;
 import com.lms.service.UserService;
-import com.lms.service.ValidityChecker;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,74 +14,46 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/user")
 public class UserController {
+
     @Autowired
     private UserService userService;
 
     @Autowired
     private CourseService courseService;
 
+    
     @Transactional
     @PutMapping
-    public ResponseEntity<User> createUser(){
+    public ResponseEntity<User> getProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(authentication == null || !authentication.isAuthenticated()){
+        if (authentication == null || !authentication.isAuthenticated()) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
-        if(!ValidityChecker.isValidSqlInjection(authentication.getName())){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        if(!ValidityChecker.isValidXSS(authentication.getName())){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        if(!ValidityChecker.isValidCSRF(authentication.getName())){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        if(!ValidityChecker.isValidHeader(authentication.getName())){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        if(!ValidityChecker.isValidFooter(authentication.getName())){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
         String username = authentication.getName();
-        if(username == null || username.isEmpty()){
+        if (username == null || username.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
         User user = userService.getUserByUsername(username);
-        if(user == null){
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         userService.updateUser(user);
-        return new ResponseEntity<>(user,HttpStatus.OK);
+        return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     @Transactional
     @PostMapping("/purchase-course/{courseId}")
-    public ResponseEntity<?> purchaseCourse(@PathVariable int courseId){
+    public ResponseEntity<?> purchaseCourse(@PathVariable int courseId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(!ValidityChecker.isValidSqlInjection(authentication.getName())){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        if(!ValidityChecker.isValidXSS(authentication.getName())){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        if(!ValidityChecker.isValidCSRF(authentication.getName())){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        if(!ValidityChecker.isValidHeader(authentication.getName())){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        if(!ValidityChecker.isValidFooter(authentication.getName())){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        if(authentication == null || !authentication.isAuthenticated()){
+        if (authentication == null || !authentication.isAuthenticated()) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
         String username = authentication.getName();
-        if(username == null || username.isEmpty()){
+        if (username == null || username.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
         User user = userService.getUserByUsername(username);
-        if(user == null){
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         courseService.purchaseCourse(courseId, user);

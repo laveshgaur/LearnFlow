@@ -46,14 +46,18 @@ public class CourseService {
     public void deleteCourse(int courseId){
         courseRepository.deleteById(courseId);
     }
-    public void purchaseCourse(int courseId, User user){
+    public void purchaseCourse(int courseId, User user) {
         Course course = getCourseById(courseId);
-        if(course == null){
+        if (course == null) {
             throw new RuntimeException("Course not found");
         }
-        user.getCourses().add(course);
-        course.setUser(user);
-        userRepository.save(user);
-        courseRepository.save(course);
+        // Guard against duplicate enrollment
+        boolean alreadyEnrolled = user.getEnrolledCourses() != null
+                && user.getEnrolledCourses().stream()
+                        .anyMatch(c -> c.getCourseId() == courseId);
+        if (!alreadyEnrolled) {
+            user.getEnrolledCourses().add(course);
+            userRepository.save(user);
+        }
     }
 }
