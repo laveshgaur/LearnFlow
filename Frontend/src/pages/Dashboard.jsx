@@ -6,7 +6,9 @@ import { getProfile, healthCheck } from '../api/client.js'
 function ProfileSummary({ user }) {
   if (!user) return <p className="muted">No profile loaded.</p>
   const roles = Array.isArray(user.roles) ? user.roles.join(', ') : '—'
-  const courses = Array.isArray(user.courses) ? user.courses : []
+  // enrolledCourses = courses the user has purchased (new join table)
+  // courses         = courses the user created as an instructor
+  const enrolledCourses = Array.isArray(user.enrolledCourses) ? user.enrolledCourses : []
   return (
     <>
     <dl className="profile-grid">
@@ -21,11 +23,11 @@ function ProfileSummary({ user }) {
         <span className="tag tag-outline">{roles}</span>
       </dd>
     </dl>
-    {courses.length > 0 && (
+    {enrolledCourses.length > 0 && (
       <div style={{ marginTop: '1rem' }}>
-        <h3>Your Courses</h3>
+        <h3>Your Enrolled Courses</h3>
         <ul className="stack">
-          {courses.map(c => (
+          {enrolledCourses.map(c => (
             <li key={c.courseId} className="card card-ghost" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>{c.courseName}</span>
               <Link to={`/course/${c.courseId}`} className="btn btn-primary btn-sm">
@@ -103,8 +105,8 @@ export default function Dashboard() {
             <p className="label muted">API health</p>
           </div>
           <div className="stat-tile">
-            <p className="value">{profile && Array.isArray(profile.courses) ? profile.courses.length : '—'}</p>
-            <p className="label muted">Courses on your profile</p>
+            <p className="value">{profile && Array.isArray(profile.enrolledCourses) ? profile.enrolledCourses.length : '—'}</p>
+            <p className="label muted">Enrolled courses</p>
           </div>
           <div className="stat-tile">
             <p className="value">{isInstructor ? 'Yes' : 'No'}</p>
