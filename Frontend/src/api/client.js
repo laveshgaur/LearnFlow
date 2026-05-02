@@ -133,3 +133,7 @@ export async function uploadVideo(auth, chapterId, title, file) {
   }
   return data
 }
+
+export async function deleteVideo(auth, videoId) {
+  return apiFetch(`/instructor/delete-video/${videoId}`, { method: 'DELETE', auth })
+}

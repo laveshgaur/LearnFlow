@@ -32,4 +32,12 @@ public class FileUploadService {
             throw new RuntimeException("Upload failed: " + e.getMessage());
         }
     }
+    public String deleteFile(String publicId) {
+        try {
+            Map<?, ?> result = cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "video"));
+            return result.get("result").toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Deletion failed: " + e.getMessage());
+        }
+    }
 } 

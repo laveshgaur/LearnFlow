@@ -41,5 +41,6 @@ public class Module {
     @JsonManagedReference
     private List<Chapter> chapters;
     @ManyToOne
+    @JsonBackReference(value = "module-instructor")
     private User instructor;
 }

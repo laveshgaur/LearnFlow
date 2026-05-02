@@ -41,11 +41,12 @@ public class Course {
 
     @ManyToOne
     @JoinColumn(name = "instructor_id")
+    @JsonBackReference(value = "course-instructor")
     private User instructor;
 
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "course-user")
     private User user;
 }

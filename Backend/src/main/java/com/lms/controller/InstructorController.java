@@ -4,6 +4,7 @@ import com.lms.model.Chapter;
 import com.lms.model.Course;
 import com.lms.model.User;
 import com.lms.model.Video;
+import com.lms.model.Module;
 import com.lms.service.ChapterService;
 import com.lms.service.CourseService;
 import com.lms.service.FileUploadService;
@@ -135,7 +136,53 @@ public class InstructorController {
         }
     }
 
-    
+    @DeleteMapping("/delete-video/{videoId}")
+    public ResponseEntity<?> deleteVideo(@PathVariable int videoId) {
+        User user = getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Video video = videoService.getVideoById(videoId);
+        if (video == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        Chapter chapter = video.getChapter();
+        if (chapter == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        
+        Module module = chapter.getModule();
+        if (module == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        
+        Course course = module.getCourse();
+        if (course == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        if (course.getInstructor() == null || !course.getInstructor().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Video existing = videoService.getVideoById(videoId);
+        if (existing == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        String videoUrl = existing.getVideoUrl();
+        String publicId = "lms_uploads/" + videoUrl.substring(videoUrl.lastIndexOf("/") + 1, videoUrl.lastIndexOf("."));
+        try {
+            fileUploadService.deleteFile(publicId);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        try {
+            videoService.deleteVideo(videoId);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+
     @PostMapping("/create-course")
     public ResponseEntity<?> createCourse(@RequestBody Course course) {
         User user = getAuthenticatedUser();

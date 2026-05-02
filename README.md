@@ -2,15 +2,16 @@
 
 # 📚 LearnFlow
 
-### A Full-Stack Learning Platform
+### A Full-Stack Learning Management System
 
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
 ![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![Cloudinary](https://img.shields.io/badge/Cloudinary-Video%20Storage-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 
-**LearnFlow** is a role-based Learning Management System (LMS) that allows **Learners** to browse and enroll in courses, **Instructors** to create and manage their own courses, and **Admins** to oversee all platform users.
+**LearnFlow** is a role-based Learning Management System (LMS) that allows **Learners** to browse, enroll in, and watch courses, **Instructors** to create and manage their full course content (including video uploads), and **Admins** to oversee all platform users.
 
 [Getting Started](#-getting-started) · [API Reference](#-api-reference) · [Architecture](#-architecture) · [Project Structure](#-project-structure)
 
@@ -45,23 +46,29 @@
 - 🔐 Register an account and log in with HTTP Basic Auth
 - 🛒 **Enroll / purchase** published courses
 - 📊 View personal **dashboard** with profile info and enrolled courses
+- 🎬 **Course Viewer** — browse modules, chapters, and watch videos
+  - Desktop: fixed two-column layout (syllabus + content side-by-side)
+  - Mobile: tab-based layout (📚 Syllabus / 📖 Content switch)
 
 ### For Instructors (INSTRUCTOR role)
 - ✏️ **Create** new courses with title, description, duration, price, cover image, and status
-- 📝 **Edit** existing courses (title, description, price, duration, status, cover image)
+- 📝 **Edit** existing courses
 - 🗑️ **Delete** courses they own
 - 🔄 Toggle course status between `DRAFT`, `PUBLISHED`, and `ARCHIVED`
-- 👁️ View only their own courses in the **Instructor Studio**
+- 📦 **Manage Modules** — create and delete modules per course
+- 📄 **Manage Chapters** — create and delete chapters per module
+- 🎬 **Upload Videos** to chapters via Cloudinary (with real-time feedback)
+- 🗑️ **Delete Videos** — removes both the Cloudinary file and the database record atomically
 
 ### For Admins (ADMIN role)
 - 👥 View a **directory of all registered users** with roles and course counts
-- 🔧 Platform-level oversight of the user base
+- ➕ **Create new users** directly from the admin panel with a styled role-picker form
 
 ### Platform-Wide
 - 🛡️ **Role-Based Access Control (RBAC)** enforced at both the API and UI levels
 - 🔑 **HTTP Basic Authentication** with BCrypt password hashing
 - ♻️ **Session-persisted credentials** via `sessionStorage` on the frontend
-- 📱 **Responsive design** with a collapsible sidebar navigation
+- 📱 **Responsive design** — collapsible sidebar + mobile-optimised course viewer
 - ⚡ **Vite dev proxy** for seamless frontend-to-backend communication
 
 ---
@@ -73,13 +80,12 @@
 │                    CLIENT (Browser)                     │
 │                                                         │
 │   React 18 + React Router 6 + Vite Dev Server (:5173)  │
-│   ┌─────────┐ ┌─────────┐ ┌──────┐ ┌───────┐          │
-│   │  Home   │ │ Catalog │ │Studio│ │ Admin │  ...      │
-│   └────┬────┘ └────┬────┘ └──┬───┘ └───┬───┘          │
-│        │           │         │         │               │
-│        └───────────┴────┬────┴─────────┘               │
+│   ┌──────┐ ┌────────┐ ┌──────┐ ┌───────┐ ┌─────────┐  │
+│   │ Home │ │Catalog │ │Studio│ │ Admin │ │ Viewer  │  │
+│   └──┬───┘ └───┬────┘ └──┬───┘ └───┬───┘ └────┬────┘  │
+│      └─────────┴──────────┴─────────┴──────────┘       │
 │                         │                               │
-│                  api/client.js                          │
+│              api/client.js + api/modules.js             │
 │             (fetch + Basic Auth header)                  │
 └─────────────────────────┬───────────────────────────────┘
                           │  Vite proxy: /api → :8080
@@ -90,61 +96,53 @@
 │   ┌──────────────────────────────────────────────────┐  │
 │   │            Spring Security Filter Chain           │  │
 │   │   • Public: POST /create-user, GET /courses/**   │  │
-│   │   • ADMIN:  GET /admin/**                        │  │
+│   │   • ADMIN:  GET /admin/**, POST /admin/**        │  │
 │   │   • INSTRUCTOR: /instructor/**                   │  │
 │   │   • USER:   /user/**                             │  │
 │   └──────────────────┬───────────────────────────────┘  │
 │                      │                                   │
 │   ┌─────────────┐  ┌┴────────────┐  ┌────────────────┐ │
 │   │ Controllers │→ │  Services   │→ │  Repositories  │ │
-│   └─────────────┘  └─────────────┘  └───────┬────────┘ │
-│                                              │          │
-│                                     Spring Data JPA     │
-└──────────────────────────────────────────────┬──────────┘
-                                               │
-                                               ▼
-                                    ┌──────────────────┐
-                                    │   MySQL 8.0      │
-                                    │  learnFlowDB     │
-                                    │                  │
-                                    │  ┌────────────┐  │
-                                    │  │   users     │  │
-                                    │  └─────┬──────┘  │
-                                    │        │ 1:N     │
-                                    │  ┌─────┴──────┐  │
-                                    │  │  courses    │  │
-                                    │  └────────────┘  │
-                                    └──────────────────┘
+│   └─────────────┘  └──────┬──────┘  └───────┬────────┘ │
+│                            │                 │          │
+│                   FileUploadService    Spring Data JPA  │
+│                   (Cloudinary SDK)            │         │
+└────────────────────────────┼─────────────────┼─────────┘
+                             │                 │
+                    ┌────────┴────┐    ┌───────┴──────────┐
+                    │  Cloudinary │    │    MySQL 8.0      │
+                    │  (videos)   │    │   learnFlowDB     │
+                    └─────────────┘    └──────────────────┘
 ```
 
 ---
 
 ## 🛠 Tech Stack
 
-| Layer        | Technology                                         |
-| ------------ | -------------------------------------------------- |
-| **Frontend** | React 18, React Router 6, Vite 5, Vanilla CSS      |
-| **Backend**  | Spring Boot 3.2.5, Spring Security, Spring Data JPA |
-| **Database** | MySQL 8.0                                          |
-| **Language** | Java 17, JavaScript (ES Modules)                   |
-| **Build**    | Maven (backend), Vite (frontend)                   |
-| **Auth**     | HTTP Basic Authentication, BCrypt password hashing  |
-| **ORM**      | Hibernate (via Spring Data JPA)                    |
-| **Tooling**  | Lombok, Spring Boot DevTools                       |
+| Layer         | Technology                                                     |
+| ------------- | -------------------------------------------------------------- |
+| **Frontend**  | React 18, React Router 6, Vite 5, Vanilla CSS                  |
+| **Backend**   | Spring Boot 3.2.5, Spring Security, Spring Data JPA            |
+| **Database**  | MySQL 8.0                                                      |
+| **Storage**   | Cloudinary (video upload & delete via SDK)                     |
+| **Language**  | Java 17, JavaScript (ES Modules)                               |
+| **Build**     | Maven (backend), Vite (frontend)                               |
+| **Auth**      | HTTP Basic Authentication, BCrypt password hashing             |
+| **ORM**       | Hibernate (via Spring Data JPA)                                |
+| **Tooling**   | Lombok, Spring Boot DevTools, SLF4J logging                    |
 
 ---
 
 ## 📦 Prerequisites
 
-Before running LearnFlow, ensure you have the following installed:
-
-| Requirement      | Version      | Notes                        |
-| ---------------- | ------------ | ---------------------------- |
-| **Java JDK**     | 17+          | `java -version` to verify    |
-| **Maven**        | 3.8+         | Or use the included `mvnw`   |
-| **Node.js**      | 18+          | `node -v` to verify          |
-| **npm**          | 9+           | Bundled with Node.js         |
-| **MySQL Server** | 8.0+         | Running on port `3306`       |
+| Requirement        | Version | Notes                      |
+| ------------------ | ------- | -------------------------- |
+| **Java JDK**       | 17+     | `java -version` to verify  |
+| **Maven**          | 3.8+    | Or use the included `mvnw` |
+| **Node.js**        | 18+     | `node -v` to verify        |
+| **npm**            | 9+      | Bundled with Node.js       |
+| **MySQL Server**   | 8.0+    | Running on port `3306`     |
+| **Cloudinary acct**| Any     | Free tier is sufficient    |
 
 ---
 
@@ -154,26 +152,30 @@ Before running LearnFlow, ensure you have the following installed:
 
 ```bash
 git clone <repository-url>
-cd Spring
+cd LearnFlow
 ```
 
 ### 2. Set Up the Database
 
 ```sql
--- Connect to MySQL and create the database
 CREATE DATABASE learnFlowDB;
 ```
 
-> The tables (`users`, `courses`) are auto-created by Hibernate on first run (`ddl-auto=update`).
+> Tables are auto-created by Hibernate on first run (`ddl-auto=update`).
 
 ### 3. Configure the Backend
 
-Edit `Backend/src/main/resources/application.properties` if your MySQL credentials differ:
+Edit `Backend/src/main/resources/application.properties`:
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/learnFlowDB
 spring.datasource.username=root
 spring.datasource.password=manager
+
+# Cloudinary credentials
+cloudinary.cloud-name=your_cloud_name
+cloudinary.api-key=your_api_key
+cloudinary.api-secret=your_api_secret
 ```
 
 ### 4. Start the Backend
@@ -205,31 +207,44 @@ Navigate to **http://localhost:5173** and you're ready to go!
 
 ### Schema Overview
 
-LearnFlow uses two tables with a **one-to-many** relationship:
-
 ```
-┌────────────────────────────┐       ┌────────────────────────────┐
-│          users             │       │         courses            │
-├────────────────────────────┤       ├────────────────────────────┤
-│ id          VARCHAR (UUID) │──┐    │ course_id    INT (AUTO)    │
-│ username    VARCHAR        │  │    │ course_name  VARCHAR       │
-│ email       VARCHAR (UQ)   │  │    │ course_description TEXT    │
-│ age         INT            │  │    │ course_duration   VARCHAR  │
-│ password_hash VARCHAR      │  │    │ course_price      VARCHAR  │
-│ created_at  DATETIME       │  │    │ course_image      VARCHAR  │
-│ roles       VARCHAR        │  │    │ course_status     VARCHAR  │
-│                            │  │    │ course_created_at VARCHAR  │
-│                            │  │    │ course_updated_at VARCHAR  │
-│                            │  └───>│ user_id      VARCHAR (FK)  │
-└────────────────────────────┘       └────────────────────────────┘
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│      users       │1──N │     courses       │1──N │     modules      │
+├──────────────────┤     ├──────────────────┤     ├──────────────────┤
+│ id (UUID PK)     │     │ course_id (PK)    │     │ module_id (PK)   │
+│ username         │     │ course_name       │     │ module_name      │
+│ email (UQ)       │     │ course_desc       │     │ module_desc      │
+│ age              │     │ course_duration   │     │ ...              │
+│ password_hash    │     │ course_price      │     │ course_id (FK)   │
+│ roles            │     │ course_status     │     └────────┬─────────┘
+│ created_at       │     │ user_id (FK)      │              │ 1
+└──────────────────┘     └──────────────────┘              │ N
+                                                   ┌────────┴─────────┐
+                                                   │     chapters     │
+                                                   ├──────────────────┤
+                                                   │ chapter_id (PK)  │
+                                                   │ chapter_name     │
+                                                   │ chapter_desc     │
+                                                   │ module_id (FK)   │
+                                                   └────────┬─────────┘
+                                                            │ 1
+                                                            │ N
+                                                   ┌────────┴─────────┐
+                                                   │      videos      │
+                                                   ├──────────────────┤
+                                                   │ video_id (PK)    │
+                                                   │ video_title      │
+                                                   │ video_url        │
+                                                   │ duration_seconds │
+                                                   │ chapter_id (FK)  │
+                                                   └──────────────────┘
 ```
 
 ### Key Points
-- **User IDs** are generated as UUIDs
-- **Course IDs** use auto-increment integers
+- **User IDs** are UUIDs; **all other IDs** use auto-increment integers
 - **Passwords** are stored as BCrypt hashes (never plaintext)
-- **Roles** are stored as a list of strings (e.g., `["USER"]`, `["USER", "INSTRUCTOR"]`)
-- **Hibernate** manages DDL — tables are created/updated automatically
+- **Video URLs** point to Cloudinary CDN; the `publicId` is derived at delete time
+- **Hibernate** manages DDL — tables created/updated automatically
 
 ---
 
@@ -237,366 +252,226 @@ LearnFlow uses two tables with a **one-to-many** relationship:
 
 ### Backend (`application.properties`)
 
-| Property                          | Default Value                              | Description                     |
-| --------------------------------- | ------------------------------------------ | ------------------------------- |
-| `spring.application.name`         | `LearnFlow`                                | Application name                |
-| `spring.datasource.url`           | `jdbc:mysql://localhost:3306/learnFlowDB`  | MySQL connection URL            |
-| `spring.datasource.username`      | `root`                                     | MySQL username                  |
-| `spring.datasource.password`      | `manager`                                  | MySQL password                  |
-| `spring.jpa.hibernate.ddl-auto`   | `update`                                   | Auto-create/update schema       |
-| `spring.jpa.show-sql`             | `true`                                     | Log SQL queries to console      |
+| Property                        | Default Value                             | Description                  |
+| ------------------------------- | ----------------------------------------- | ---------------------------- |
+| `spring.datasource.url`         | `jdbc:mysql://localhost:3306/learnFlowDB` | MySQL connection URL         |
+| `spring.datasource.username`    | `root`                                    | MySQL username               |
+| `spring.datasource.password`    | `manager`                                 | MySQL password               |
+| `spring.jpa.hibernate.ddl-auto` | `update`                                  | Auto-create/update schema    |
+| `spring.jpa.show-sql`           | `true`                                    | Log SQL to console           |
+| `cloudinary.cloud-name`         | —                                         | Cloudinary cloud name        |
+| `cloudinary.api-key`            | —                                         | Cloudinary API key           |
+| `cloudinary.api-secret`         | —                                         | Cloudinary API secret        |
 
 ### Frontend (`vite.config.js`)
 
-| Setting        | Value                       | Description                                |
-| -------------- | --------------------------- | ------------------------------------------ |
-| Dev port       | `5173`                      | Vite dev server port                       |
-| API proxy      | `/api` → `localhost:8080`   | Proxies `/api/*` to Spring Boot backend    |
-| Rewrite rule   | Strips `/api` prefix        | `/api/courses` → `/courses` on backend     |
-
-### Environment Variables (Frontend)
-
-| Variable         | Default      | Description                                             |
-| ---------------- | ------------ | ------------------------------------------------------- |
-| `VITE_API_URL`   | (none)       | Override API base URL for production deployments        |
+| Setting       | Value                     | Description                             |
+| ------------- | ------------------------- | --------------------------------------- |
+| Dev port      | `5173`                    | Vite dev server port                    |
+| API proxy     | `/api` → `localhost:8080` | Proxies `/api/*` to Spring Boot backend |
+| Rewrite rule  | Strips `/api` prefix      | `/api/courses` → `/courses` on backend  |
 
 ---
 
 ## 📁 Project Structure
 
 ```
-Spring/
-├── Backend/                           # Spring Boot Application
-│   ├── pom.xml                        # Maven build configuration
-│   ├── mvnw / mvnw.cmd               # Maven wrapper scripts
-│   └── src/
-│       └── main/
-│           ├── java/com/lms/
-│           │   ├── LearnFlowApplication.java      # Entry point
-│           │   ├── config/
-│           │   │   └── SpringSecurity.java         # Security filter chain, CORS, BCrypt
-│           │   ├── controller/
-│           │   │   ├── AdminController.java         # GET /admin — list all users
-│           │   │   ├── CourseController.java         # GET /courses — public catalog
-│           │   │   ├── HealthCheck.java              # GET /health-check
-│           │   │   ├── InstructorController.java     # CRUD under /instructor/**
-│           │   │   ├── PublicController.java         # POST /create-user (registration)
-│           │   │   └── UserController.java           # PUT /user, POST /user/purchase-course
-│           │   ├── model/
-│           │   │   ├── Courses.java                  # Course JPA entity
-│           │   │   └── User.java                     # User JPA entity
-│           │   ├── repository/
-│           │   │   ├── CourseRepository.java          # Spring Data JPA (courses)
-│           │   │   └── UserRepository.java            # Spring Data JPA (users)
-│           │   └── service/
-│           │       ├── CourseService.java              # Course business logic
-│           │       ├── UserDetailsServiceImpl.java     # Spring Security UserDetailsService
-│           │       └── UserService.java                # User business logic + BCrypt
-│           └── resources/
-│               └── application.properties             # DB config, Hibernate settings
+LearnFlow/
+├── Backend/                              # Spring Boot Application
+│   ├── pom.xml
+│   └── src/main/java/com/lms/
+│       ├── controller/
+│       │   ├── AdminController.java          # GET /admin — list all users
+│       │   ├── CourseController.java          # GET /courses — public catalog
+│       │   ├── InstructorController.java      # Course/video CRUD /instructor/**
+│       │   ├── ModuleController.java          # Module CRUD
+│       │   ├── ChapterController.java         # Chapter CRUD
+│       │   ├── VideoController.java           # GET videos by chapter
+│       │   ├── UserController.java            # Profile + purchase
+│       │   └── PublicController.java          # POST /create-user
+│       ├── model/
+│       │   ├── User.java
+│       │   ├── Course.java
+│       │   ├── Module.java
+│       │   ├── Chapter.java
+│       │   └── Video.java
+│       ├── repository/
+│       │   ├── UserRepository.java
+│       │   ├── CourseRepository.java
+│       │   ├── ModuleRepository.java
+│       │   ├── ChapterRepository.java
+│       │   └── VideoRepository.java
+│       └── service/
+│           ├── UserService.java
+│           ├── CourseService.java
+│           ├── ModuleService.java
+│           ├── ChapterService.java
+│           ├── VideoService.java
+│           └── FileUploadService.java         # Cloudinary upload & delete
 │
-├── Frontend/                          # React + Vite SPA
-│   ├── package.json                   # Dependencies & scripts
-│   ├── vite.config.js                 # Dev server + API proxy
-│   ├── index.html                     # HTML entry point
+├── Frontend/                             # React + Vite SPA
 │   └── src/
-│       ├── main.jsx                   # React root with BrowserRouter + AuthProvider
-│       ├── App.jsx                    # Route definitions
-│       ├── App.css                    # Global styles
-│       ├── index.css                  # CSS reset / base styles
 │       ├── api/
-│       │   └── client.js             # API client (fetch wrapper + Basic Auth)
+│       │   ├── client.js                 # Base fetch wrapper + instructor APIs
+│       │   └── modules.js               # Module/chapter/video API calls
 │       ├── context/
-│       │   └── AuthContext.jsx       # Auth state (sessionStorage persistence)
+│       │   └── AuthContext.jsx
 │       ├── components/
-│       │   ├── Layout.jsx            # App shell: sidebar + footer
-│       │   └── Layout.css            # Sidebar, navigation styles
+│       │   ├── Layout.jsx
+│       │   └── Layout.css
 │       └── pages/
-│           ├── Home.jsx              # Landing page with hero section
-│           ├── Courses.jsx           # Public course catalog + enrollment
-│           ├── Login.jsx             # Login form (HTTP Basic Auth)
-│           ├── Register.jsx          # Registration form
-│           ├── Dashboard.jsx         # User profile + health check
-│           ├── Studio.jsx            # Instructor course management (CRUD)
-│           └── Admin.jsx             # Admin user directory
+│           ├── Home.jsx
+│           ├── Courses.jsx
+│           ├── Login.jsx
+│           ├── Register.jsx
+│           ├── Dashboard.jsx
+│           ├── Studio.jsx               # Instructor course list + CRUD
+│           ├── StudioCourse.jsx         # Module/chapter/video builder
+│           ├── CourseViewer.jsx         # Learner chapter + video viewer
+│           └── Admin.jsx                # Admin user directory + create user
 │
-└── README.md                          # This file
+└── README.md
 ```
 
 ---
 
 ## 📡 API Reference
 
-### Public Endpoints (No Auth Required)
+### Public Endpoints
 
-#### Health Check
 ```http
-GET /health-check
-```
-Returns `"Ok"` — useful for monitoring and verifying API connectivity.
-
----
-
-#### Register a New User
-```http
+GET  /health-check
 POST /create-user
-Content-Type: application/json
-
-{
-  "userName": "johndoe",
-  "email": "john@example.com",
-  "age": 25,
-  "password": "securePassword123"
-}
+GET  /courses
 ```
-**Response:** `201 Created` with the created user object
-- Password is hashed with BCrypt before storage
-- Default role: `["USER"]`
-- `createdAt` is auto-set to the current timestamp
 
 ---
 
-#### List All Courses (Public Catalog)
+### Authenticated (USER role)
+
 ```http
-GET /courses
+PUT  /user                                 # Get own profile
+POST /user/purchase-course/{courseId}      # Enroll in a course
+GET  /courses/{courseId}/modules           # List modules (enrolled users)
+GET  /courses/{courseId}/modules/{moduleId}/chapters
+GET  /courses/{courseId}/modules/{moduleId}/chapters/{chapterId}/videos
 ```
-**Response:** `200 OK` with an array of all courses, or `204 No Content` if empty.
-
----
-
-### Authenticated Endpoints (USER role)
-
-> All authenticated endpoints require an `Authorization: Basic <base64(username:password)>` header.
-
-#### Get / Sync User Profile
-```http
-PUT /user
-Authorization: Basic <credentials>
-```
-**Response:** `200 OK` with the authenticated user's profile, including roles and enrolled courses.
-
----
-
-#### Purchase / Enroll in a Course
-```http
-POST /user/purchase-course/{courseId}
-Authorization: Basic <credentials>
-```
-**Response:** `200 OK` on success. Links the course to the authenticated user.
 
 ---
 
 ### Instructor Endpoints (INSTRUCTOR role)
 
-#### List My Courses
 ```http
-GET /instructor/get-courses
-Authorization: Basic <credentials>
-```
-**Response:** `200 OK` with an array of courses belonging to the authenticated instructor.
-
----
-
-#### Create a Course
-```http
-POST /instructor/create-course
-Authorization: Basic <credentials>
-Content-Type: application/json
-
-{
-  "courseName": "Spring Boot Masterclass",
-  "courseDescription": "Learn Spring Boot from scratch",
-  "courseDuration": "8 weeks",
-  "coursePrice": "$49.99",
-  "courseImage": "https://example.com/cover.jpg",
-  "courseStatus": "PUBLISHED"
-}
-```
-**Response:** `201 Created` with the created course object.
-- `courseCreatedAt` and `courseUpdatedAt` are auto-set
-- Course is linked to the authenticated instructor via `user_id`
-
----
-
-#### Update a Course
-```http
-PUT /instructor/update-course/{courseId}
-Authorization: Basic <credentials>
-Content-Type: application/json
-
-{
-  "courseName": "Updated Title",
-  "courseDescription": "Updated description",
-  "courseDuration": "10 weeks",
-  "coursePrice": "$59.99",
-  "courseImage": "https://example.com/new-cover.jpg",
-  "courseStatus": "PUBLISHED"
-}
-```
-**Response:** `200 OK`
-- Only the course owner (instructor) can update
-- `courseUpdatedAt` is auto-refreshed
-- Returns `403 Forbidden` if the course belongs to another instructor
-
----
-
-#### Delete a Course
-```http
+GET    /instructor/get-courses
+POST   /instructor/create-course
+PUT    /instructor/update-course/{courseId}
 DELETE /instructor/delete-course/{courseId}
-Authorization: Basic <credentials>
+
+POST   /instructor/upload-video            # multipart: chapterId, title, file
+DELETE /instructor/delete-video/{videoId}  # deletes from Cloudinary + DB
+
+GET    /course/{courseId}/modules
+POST   /course/{courseId}/modules
+PUT    /course/{courseId}/modules/{moduleId}
+DELETE /course/{courseId}/modules/{moduleId}
+
+GET    /courses/{courseId}/modules/{moduleId}/chapters
+POST   /courses/{courseId}/modules/{moduleId}/chapters
+DELETE /courses/{courseId}/modules/{moduleId}/chapters/{chapterId}
 ```
-**Response:** `204 No Content`
-- Only the course owner can delete
-- Returns `403 Forbidden` if the course belongs to another instructor
+
+> **Video delete flow:** The server extracts `lms_uploads/<filename>` as the Cloudinary `publicId`, calls `cloudinary.uploader().destroy()` with `resource_type: video`, then deletes the DB record.
 
 ---
 
 ### Admin Endpoints (ADMIN role)
 
-#### List All Users
 ```http
-GET /admin
-Authorization: Basic <credentials>
+GET  /admin                                # List all users
+POST /admin/create-user                    # Create user with explicit roles
 ```
-**Response:** `200 OK` with an array of all users (with roles and courses), or `204 No Content` if empty.
 
 ---
 
 ## 🔒 Authentication & Authorization
 
-### Authentication Flow
-
-```
-┌──────────┐    POST /create-user     ┌─────────────┐
-│  Browser │ ─────────────────────────> │  Spring Boot │
-│  (React) │ <───────────────────────── │  (Public)    │
-│          │    201 + user JSON         └─────────────┘
-│          │
-│          │    GET /health-check       ┌─────────────┐
-│          │ ── Authorization: Basic ──>│  Spring Sec. │
-│          │ <─── 200 "Ok" ─────────── │  Filter      │
-│          │                            └─────────────┘
-│          │    PUT /user               ┌─────────────┐
-│          │ ── Authorization: Basic ──>│  UserCtrl    │
-│          │ <─── 200 + profile ─────── │  (roles etc) │
-│          │                            └─────────────┘
-│          │
-│          │  Stores {username, password, roles}
-│          │  in sessionStorage
-└──────────┘
-```
-
 ### Security Rules
 
-| URL Pattern              | Access              | Description                           |
-| ------------------------ | ------------------- | ------------------------------------- |
-| `POST /create-user`      | **Public**          | Open registration                     |
-| `GET /courses`           | **Public**          | Public course catalog                 |
-| `GET /courses/**`        | **Public**          | Course details                        |
-| `GET /health-check`      | **Authenticated**   | Any logged-in user                    |
-| `PUT /user`              | **Authenticated**   | Get own profile                       |
-| `POST /user/**`          | **Authenticated**   | Purchase courses                      |
-| `/instructor/**`         | **ROLE_INSTRUCTOR** | Full course CRUD for own courses      |
-| `/admin/**`              | **ROLE_ADMIN**      | View all users                        |
-
-### Password Security
-- Passwords are **never returned** in API responses (`@JsonProperty(access = WRITE_ONLY)`)
-- Hashed with **BCrypt** before storage
-- Verified via `DaoAuthenticationProvider` with Spring Security
+| URL Pattern                     | Access              | Description                          |
+| ------------------------------- | ------------------- | ------------------------------------ |
+| `POST /create-user`             | **Public**          | Open registration                    |
+| `GET /courses`                  | **Public**          | Public course catalog                |
+| `GET /health-check`             | **Authenticated**   | Any logged-in user                   |
+| `PUT /user`                     | **Authenticated**   | Get own profile                      |
+| `POST /user/**`                 | **Authenticated**   | Purchase courses                     |
+| `/instructor/**`                | **ROLE_INSTRUCTOR** | Full course + video CRUD             |
+| `/admin/**`                     | **ROLE_ADMIN**      | View and create users                |
 
 ### Roles
-Users can hold one or more roles:
-- `USER` — default role assigned at registration
-- `INSTRUCTOR` — can create/manage courses (must be assigned by modifying the DB or by an admin)
-- `ADMIN` — can view all users
+| Role         | Assigned by         | Capabilities                                |
+| ------------ | ------------------- | ------------------------------------------- |
+| `USER`       | Default at register | Browse, enroll, watch courses               |
+| `INSTRUCTOR` | Admin / DB          | All USER abilities + course/video management|
+| `ADMIN`      | DB                  | All USER abilities + user directory + create|
 
 ---
 
 ## 🖥 Frontend Pages
 
-| Route          | Page Component | Auth Required | Role Required  | Description                                        |
-| -------------- | -------------- | ------------- | -------------- | -------------------------------------------------- |
-| `/`            | `Home`         | No            | —              | Landing page with hero section and feature tiles   |
-| `/courses`     | `Courses`      | No            | —              | Public course catalog with enrollment buttons      |
-| `/register`    | `Register`     | No            | —              | User registration form                             |
-| `/login`       | `Login`        | No            | —              | Login form with credential validation              |
-| `/dashboard`   | `Dashboard`    | Yes           | Any            | User profile, API health, enrolled courses count   |
-| `/studio`      | `Studio`       | Yes           | INSTRUCTOR     | Course CRUD management with table + create form    |
-| `/teach`       | `Studio`       | Yes           | INSTRUCTOR     | Alias route for the Instructor Studio              |
-| `/admin`       | `Admin`        | Yes           | ADMIN          | User directory table                               |
-
-### Frontend Auth State
-- Credentials are stored in `sessionStorage` under key `learnflow_auth`
-- The `AuthContext` provides `isAuthenticated`, `isInstructor`, `login()`, `logout()`, and `refreshRoles()` to all components
-- The sidebar dynamically shows/hides navigation links based on the user's authentication state and roles
+| Route                    | Page             | Auth | Role        | Description                                    |
+| ------------------------ | ---------------- | ---- | ----------- | ---------------------------------------------- |
+| `/`                      | `Home`           | No   | —           | Landing page                                   |
+| `/courses`               | `Courses`        | No   | —           | Public catalog + enrollment                    |
+| `/register`              | `Register`       | No   | —           | Registration form                              |
+| `/login`                 | `Login`          | No   | —           | Login form                                     |
+| `/dashboard`             | `Dashboard`      | Yes  | Any         | Profile + health check + enrolled courses      |
+| `/studio`                | `Studio`         | Yes  | INSTRUCTOR  | Course list + create / edit / delete           |
+| `/studio/course/:id`     | `StudioCourse`   | Yes  | INSTRUCTOR  | Module/chapter builder + video upload/delete   |
+| `/courses/:id/view`      | `CourseViewer`   | Yes  | Any         | Chapter viewer with video player               |
+| `/admin`                 | `Admin`          | Yes  | ADMIN       | User directory + create user form              |
 
 ---
 
 ## 📊 Data Models
 
-### User Entity
+### Video Entity
 
-| Field          | Type              | Column            | Constraints                  |
-| -------------- | ----------------- | ----------------- | ---------------------------- |
-| `id`           | `String` (UUID)   | `id`              | Primary Key, auto-generated  |
-| `userName`     | `String`          | `username`        | Not null                     |
-| `email`        | `String`          | `email`           | Not null, unique             |
-| `age`          | `int`             | `age`             | —                            |
-| `password`     | `String`          | `password_hash`   | Not null, write-only in JSON |
-| `createdAt`    | `LocalDateTime`   | `created_at`      | Auto-set at registration     |
-| `roles`        | `List<String>`    | `roles`           | Default: `["USER"]`          |
-| `courses`      | `List<Courses>`   | (mapped by user)  | One-to-many relationship     |
-
-### Courses Entity
-
-| Field              | Type      | Column              | Constraints                  |
-| ------------------ | --------- | ------------------- | ---------------------------- |
-| `courseId`          | `int`     | `course_id`         | Primary Key, auto-increment  |
-| `courseName`       | `String`  | `course_name`       | Not null                     |
-| `courseDescription` | `String` | `course_description`| Not null                     |
-| `courseDuration`   | `String`  | `course_duration`   | Not null                     |
-| `coursePrice`       | `String`  | `course_price`      | Not null                     |
-| `courseImage`       | `String`  | `course_image`      | Not null                     |
-| `courseStatus`      | `String`  | `course_status`     | Not null (`DRAFT` / `PUBLISHED` / `ARCHIVED`) |
-| `courseCreatedAt`   | `String`  | `course_created_at` | Not null, auto-set           |
-| `courseUpdatedAt`   | `String`  | `course_updated_at` | Not null, auto-set           |
-| `user`             | `User`    | `user_id` (FK)      | Not null, many-to-one        |
+| Field               | Type     | Column             | Constraints                 |
+| ------------------- | -------- | ------------------ | --------------------------- |
+| `videoId`           | `int`    | `video_id`         | PK, auto-increment          |
+| `videoTitle`        | `String` | `video_title`      | Not null                    |
+| `videoUrl`          | `String` | `video_url`        | Cloudinary secure URL       |
+| `durationInSeconds` | `int`    | `duration_in_seconds` | Not null                 |
+| `chapter`           | `Chapter`| `chapter_id` (FK)  | Many-to-one                 |
 
 ---
 
 ## 🌐 CORS Configuration
 
-The backend allows cross-origin requests from the frontend dev servers:
-
-| Setting            | Value                                             |
-| ------------------ | ------------------------------------------------- |
-| Allowed Origins    | `http://localhost:5173`, `http://localhost:4173`   |
-| Allowed Methods    | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`|
-| Allowed Headers    | `Authorization`, `Content-Type`, `Accept`         |
-| Max Age            | `3600` seconds (1 hour)                           |
+| Setting          | Value                                              |
+| ---------------- | -------------------------------------------------- |
+| Allowed Origins  | `http://localhost:5173`, `http://localhost:4173`   |
+| Allowed Methods  | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` |
+| Allowed Headers  | `Authorization`, `Content-Type`, `Accept`          |
+| Max Age          | `3600` seconds                                     |
 
 ---
 
 ## 🧪 Running in Production
 
-### Build the Frontend
 ```bash
+# Frontend
 cd Frontend
-npm run build        # Output in Frontend/dist/
-npm run preview      # Preview the production build on :4173
-```
+npm run build
+npm run preview      # Preview on :4173
 
-### Build the Backend
-```bash
+# Backend
 cd Backend
 ./mvnw clean package -DskipTests
 java -jar target/LearnFlow-0.0.1-SNAPSHOT.jar
 ```
 
-### Environment Variables for Production
-- Set `VITE_API_URL` to the backend URL (e.g., `https://api.learnflow.com`) before building the frontend
-- Update `spring.datasource.*` properties with production database credentials
-- Consider disabling `spring.jpa.show-sql` in production
+Set `VITE_API_URL` to your backend URL before building the frontend.
 
 ---
 
