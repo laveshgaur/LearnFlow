@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
-import { listCourses, purchaseCourse } from '../api/client.js'
+import { listCourses, purchaseCourse, getProfile } from '../api/client.js'
 
 function CourseMedia({ src, title }) {
   const [err, setErr] = useState(false)
@@ -37,13 +37,23 @@ export default function Courses() {
   const [busyId,   setBusyId]   = useState(null)
   const [search,   setSearch]   = useState('')
 
+  const [enrolledIds, setEnrolledIds] = useState(new Set())
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       setError(''); setLoading(true)
       try {
-        const data = await listCourses()
-        if (!cancelled) setCourses(Array.isArray(data) ? data : [])
+        const [data, profileData] = await Promise.all([
+          listCourses(),
+          isAuthenticated && credentials ? getProfile(credentials).catch(() => null) : Promise.resolve(null)
+        ])
+        if (!cancelled) {
+          setCourses(Array.isArray(data) ? data : [])
+          if (profileData && Array.isArray(profileData.enrolledCourses)) {
+            setEnrolledIds(new Set(profileData.enrolledCourses.map(c => c.courseId)))
+          }
+        }
       } catch (e) {
         if (!cancelled) setError(e.message || 'Could not load courses.')
       } finally {
@@ -51,7 +61,7 @@ export default function Courses() {
       }
     })()
     return () => { cancelled = true }
-  }, [])
+  }, [isAuthenticated, credentials])
 
   async function onPurchase(courseId, title) {
     if (!credentials) return
@@ -59,6 +69,11 @@ export default function Courses() {
     try {
       await purchaseCourse(credentials, courseId)
       setHint({ type: 'ok', text: `🎉 Enrolled in "${title}"! Find it on your dashboard.` })
+      setEnrolledIds(prev => {
+        const next = new Set(prev)
+        next.add(courseId)
+        return next
+      })
     } catch (e) {
       setHint({
         type: 'err',
@@ -146,6 +161,7 @@ export default function Courses() {
           {filtered.map(c => {
             const status = STATUS_META[c.courseStatus] || { label: c.courseStatus, cls: 'tag-outline' }
             const isPublished = c.courseStatus === 'PUBLISHED'
+            const isEnrolled = enrolledIds.has(c.courseId)
             return (
               <article key={c.courseId} className="course-card">
                 <div className="course-card-media">
@@ -165,7 +181,12 @@ export default function Courses() {
                     <span className={`tag ${status.cls}`}>{status.label}</span>
                   </div>
                   <div className="course-card-actions">
-                    {isAuthenticated && isPublished && (
+                    {isAuthenticated && isPublished && isEnrolled && (
+                      <Link to={`/course/${c.courseId}`} className="btn btn-secondary btn-block" style={{ color: 'var(--emerald)', borderColor: 'rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.05)' }}>
+                        ✓ Enrolled — Study now
+                      </Link>
+                    )}
+                    {isAuthenticated && isPublished && !isEnrolled && (
                       <button
                         type="button"
                         className="btn btn-primary btn-block"

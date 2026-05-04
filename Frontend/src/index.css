@@ -89,14 +89,40 @@ body {
   margin: 0;
   min-height: 100vh;
   background: var(--bg-deep);
+  /* No background-attachment:fixed — it forces full-page repaints on mobile */
+  overscroll-behavior-y: none;
+}
+
+/* Composited background gradient — GPU layer, no repaint on scroll */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image:
     radial-gradient(ellipse 80% 50% at 20% -10%, rgba(99,102,241,0.18) 0%, transparent 60%),
     radial-gradient(ellipse 60% 40% at 80% 110%, rgba(167,139,250,0.12) 0%, transparent 60%),
     radial-gradient(ellipse 40% 40% at 50% 50%, rgba(34,211,238,0.06) 0%, transparent 70%);
-  background-attachment: fixed;
+  will-change: transform; /* promote to own compositor layer */
 }
 
 #root { min-height: 100vh; }
+
+/* ── Touch optimizations ── */
+/* Remove 300ms tap delay globally on touch devices */
+a, button, [role="button"], input, select, textarea, label {
+  touch-action: manipulation;
+}
+
+/* Improve scroll momentum on iOS for overflow containers */
+.sb-nav,
+.cv-nav,
+.cv-main,
+.modal-card,
+.table-wrap {
+  -webkit-overflow-scrolling: touch;
+}
 
 /* ── Typography defaults ── */
 h1,h2,h3,h4,h5,h6 {

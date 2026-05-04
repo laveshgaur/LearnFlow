@@ -253,6 +253,7 @@
     transform: translateX(-105%);
     box-shadow: var(--shadow-lg);
     transition: transform 0.28s var(--ease);
+    will-change: transform;
   }
   .sidebar.is-open { transform: translateX(0); }
   .sidebar-scrim {

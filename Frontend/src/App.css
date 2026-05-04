@@ -62,10 +62,16 @@
   padding: 1.75rem;
   box-shadow: var(--glass-shadow);
   transition: border-color 0.25s var(--ease), box-shadow 0.25s var(--ease), transform 0.25s var(--ease);
+  will-change: transform;
 }
 .card:hover {
   border-color: rgba(99,102,241,0.25);
   box-shadow: var(--glow-indigo), var(--shadow-lg);
+}
+/* Don't translate on touch — no pointer-leave means it snaps back jankily */
+@media (hover: none) {
+  .card { will-change: auto; }
+  .card:hover { transform: none; box-shadow: var(--glass-shadow); border-color: var(--glass-border); }
 }
 
 .card-ghost {
@@ -135,6 +141,10 @@
   text-decoration: none;
   position: relative;
   overflow: hidden;
+  will-change: transform;
+  /* Prevent double-tap zoom and the 300ms tap delay */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .btn::before {
   content: '';
@@ -188,6 +198,17 @@
 .btn-danger:hover:not(:disabled) {
   background: rgba(251,113,133,0.22);
   transform: translateY(-1px);
+}
+
+/* Suppress translateY bounces on touch screens */
+@media (hover: none) {
+  .btn { will-change: auto; }
+  .btn-primary:hover:not(:disabled),
+  .btn-secondary:hover:not(:disabled),
+  .btn-ghost:hover:not(:disabled),
+  .btn-danger:hover:not(:disabled) {
+    transform: none;
+  }
 }
 
 .btn-sm   { padding: 0.38rem 0.75rem; font-size: 0.8rem; border-radius: var(--radius-xs); }
@@ -306,7 +327,7 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; 
   background: rgba(255,255,255,0.02);
 }
 .table-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem; }
-.table-actions { text-align: right; white-space: nowrap; }
+.table-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; }
 
 /* ─── Modal ─── */
 .modal-root {
@@ -492,8 +513,13 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; 
   overflow: hidden;
   padding: 1.75rem;
   transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  will-change: transform;
 }
 .home-tile:hover { transform: translateY(-4px); box-shadow: var(--glow-indigo), var(--shadow-lg); }
+@media (hover: none) {
+  .home-tile { will-change: auto; }
+  .home-tile:hover { transform: none; box-shadow: none; }
+}
 .home-tile-icon {
   width: 44px; height: 44px;
   border-radius: var(--radius-sm);
@@ -531,11 +557,16 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; 
   flex-direction: column;
   transition: border-color 0.25s var(--ease), transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
   position: relative;
+  will-change: transform;
 }
 .course-card:hover {
   border-color: rgba(99,102,241,0.35);
   transform: translateY(-4px);
   box-shadow: var(--glow-indigo), var(--shadow);
+}
+@media (hover: none) {
+  .course-card { will-change: auto; }
+  .course-card:hover { transform: none; box-shadow: none; border-color: var(--border); }
 }
 .course-card-media {
   aspect-ratio: 16/10;
@@ -543,8 +574,12 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; 
   position: relative;
   overflow: hidden;
 }
-.course-card-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s var(--ease); }
+.course-card-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s var(--ease); will-change: transform; }
 .course-card:hover .course-card-media img { transform: scale(1.04); }
+@media (hover: none) {
+  .course-card-media img { will-change: auto; }
+  .course-card:hover .course-card-media img { transform: none; }
+}
 .course-card-media-fallback {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;

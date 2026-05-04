@@ -205,12 +205,13 @@ export default function StudioCourse() {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     cursor: 'pointer',
+                    gap: '1rem',
                     border: activeModule?.moduleId === mod.moduleId ? '1px solid #e8a838' : '',
                   }}
                   onClick={() => handleSelectModule(mod)}
                 >
-                  <span>{mod.moduleName}</span>
-                  <div>
+                  <span style={{ minWidth: 0, wordBreak: 'break-word' }}>{mod.moduleName}</span>
+                  <div style={{ flexShrink: 0 }}>
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm danger-text"
@@ -250,13 +251,13 @@ export default function StudioCourse() {
                 {chapters.map((chap) => {
                   const videos = chapterVideos[chap.chapterId] || []
                   return (
-                    <li key={chap.chapterId} className="card">
-                      <h3>{chap.chapterName}</h3>
-                      <p className="muted">{chap.chapterDescription}</p>
+                    <li key={chap.chapterId} className="card" style={{ padding: '1.25rem' }}>
+                      <h3 style={{ minWidth: 0, wordBreak: 'break-word' }}>{chap.chapterName}</h3>
+                      <p className="muted" style={{ minWidth: 0, wordBreak: 'break-word' }}>{chap.chapterDescription}</p>
 
                       {/* Videos list */}
                       {videos.length > 0 && (
-                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.5rem' }}>
+                         <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.8rem' }}>
                           {videos.map((vid) => (
                             <li
                               key={vid.videoId}
@@ -271,7 +272,7 @@ export default function StudioCourse() {
                                 borderRadius: '6px',
                               }}
                             >
-                              <span style={{ fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>
                                 🎬 {vid.videoTitle}
                               </span>
                               <button

@@ -12,5 +12,6 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
+    allowedHosts: ['localhost', 'mirror-disc-involves-announcement.trycloudflare.com'],
   },
 })
