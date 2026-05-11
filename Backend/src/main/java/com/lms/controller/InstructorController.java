@@ -103,16 +103,23 @@ public class InstructorController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Chapter not found");
             }
             
-            String url = fileUploadService.uploadFile(file);
-            if (url == null || url.isEmpty()) {
+            // Upload video to Cloudinary — returns the secure URL
+            String videoUrl = fileUploadService.uploadVideo(file);
+            if (videoUrl == null || videoUrl.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("File upload failed");
             }
 
+            // Convert to HLS streaming URL (swaps extension to .m3u8)
+            String hlsUrl = fileUploadService.getHlsUrl(videoUrl);
+            if (hlsUrl == null || hlsUrl.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("HLS conversion failed");
+            }
             // Save video
             Video video = new Video();
             video.setVideoTitle(title);
-            video.setVideoUrl(url);
+            video.setVideoUrl(hlsUrl);
             video.setDurationInSeconds(0); // Placeholder, can be updated later
             video.setChapter(chapter);
 
@@ -168,7 +175,14 @@ public class InstructorController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         String videoUrl = existing.getVideoUrl();
-        String publicId = "lms_uploads/" + videoUrl.substring(videoUrl.lastIndexOf("/") + 1, videoUrl.lastIndexOf("."));
+        String publicId;
+        int folderIdx = videoUrl.indexOf("lms_uploads/");
+        if (folderIdx != -1) {
+            String pathWithExt = videoUrl.substring(folderIdx);
+            publicId = pathWithExt.substring(0, pathWithExt.lastIndexOf("."));
+        } else {
+            publicId = "lms_uploads/" + videoUrl.substring(videoUrl.lastIndexOf("/") + 1, videoUrl.lastIndexOf("."));
+        }
         try {
             fileUploadService.deleteFile(publicId);
         } catch (Exception e) {

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import VideoPlayer from '../components/VideoPlayer.jsx'
 import { getModules, getChapters, getVideos } from '../api/modules.js'
 
 const MAX_TITLE_LEN = 60
@@ -161,18 +162,7 @@ export default function CourseViewer() {
               <h3>Videos</h3>
               {videos.map(vid => (
                 <div key={vid.id || vid.videoId} style={{ marginTop: '1.25rem' }}>
-                  <video
-                    controls
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      aspectRatio: '16 / 9',
-                      backgroundColor: '#000',
-                      borderRadius: '8px',
-                      objectFit: 'contain',
-                    }}
-                    src={vid.videoUrl}
-                  />
+                  <VideoPlayer src={vid.videoUrl} />
                   <VideoTitle title={vid.videoTitle} />
                 </div>
               ))}
