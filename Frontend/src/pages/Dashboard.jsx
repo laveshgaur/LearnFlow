@@ -89,7 +89,7 @@ export default function Dashboard() {
       setError('')
       setLoading(true)
       try {
-        const [h, p] = await Promise.all([healthCheck(credentials), getProfile(credentials)])
+        const [h, p] = await Promise.all([healthCheck(), getProfile(credentials.token)])
         if (!cancelled) { setHealth(h); setProfile(p) }
       } catch (e) {
         if (!cancelled) setError(e.message || 'Failed to load dashboard.')

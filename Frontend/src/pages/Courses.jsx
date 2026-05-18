@@ -46,7 +46,7 @@ export default function Courses() {
       try {
         const [data, profileData] = await Promise.all([
           listCourses(),
-          isAuthenticated && credentials ? getProfile(credentials).catch(() => null) : Promise.resolve(null)
+          isAuthenticated && credentials ? getProfile(credentials.token).catch(() => null) : Promise.resolve(null)
         ])
         if (!cancelled) {
           setCourses(Array.isArray(data) ? data : [])
@@ -67,7 +67,7 @@ export default function Courses() {
     if (!credentials) return
     setHint(null); setBusyId(courseId)
     try {
-      await purchaseCourse(credentials, courseId)
+      await purchaseCourse(credentials.token, courseId)
       setHint({ type: 'ok', text: `🎉 Enrolled in "${title}"! Find it on your dashboard.` })
       setEnrolledIds(prev => {
         const next = new Set(prev)

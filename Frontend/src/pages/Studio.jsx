@@ -47,7 +47,7 @@ export default function Studio() {
     setForbidden(false)
     setLoading(true)
     try {
-      const data = await getInstructorCourses(credentials)
+      const data = await getInstructorCourses(credentials.token)
       setList(Array.isArray(data) ? data : [])
     } catch (e) {
       if (e.status === 403 || e.status === 401) {
@@ -90,7 +90,7 @@ export default function Studio() {
           createForm.courseImage.trim() || 'https://placehold.co/800x500/1e1830/e8a838?text=Course',
         courseStatus: createForm.courseStatus.trim(),
       }
-      await createCourse(credentials, body)
+      await createCourse(credentials.token, body)
       setCreateForm(emptyCreate)
       setCreateMsg({ type: 'ok', text: 'Course created.' })
       await load()
@@ -110,7 +110,7 @@ export default function Studio() {
   async function onDelete(id) {
     if (!window.confirm('Delete this course? This cannot be undone.')) return
     try {
-      await deleteInstructorCourse(credentials, id)
+      await deleteInstructorCourse(credentials.token, id)
       await load()
     } catch (e) {
       setError(e.status === 403 ? 'Not allowed to delete this course.' : e.message || 'Delete failed.')
@@ -136,7 +136,7 @@ export default function Studio() {
           editing.courseImage.trim() || 'https://placehold.co/800x500/1e1830/e8a838?text=Course',
         courseStatus: editing.courseStatus.trim(),
       }
-      await updateInstructorCourse(credentials, editing.courseId, body)
+      await updateInstructorCourse(credentials.token, editing.courseId, body)
       setEditing(null)
       await load()
     } catch (e) {

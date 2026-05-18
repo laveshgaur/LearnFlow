@@ -21,7 +21,7 @@ export default function Admin() {
     setEmpty(false)
     setLoading(true)
     try {
-      const data = await listUsersAdmin(credentials)
+      const data = await listUsersAdmin(credentials.token)
       if (Array.isArray(data)) {
         setUsers(data)
         setEmpty(data.length === 0)
@@ -59,7 +59,7 @@ export default function Admin() {
         age: parseInt(newUser.age, 10) || 0,
         roles: newUser.roles.split(',').map(r => r.trim()).filter(Boolean)
       }
-      await createUserAdmin(credentials, payload)
+      await createUserAdmin(credentials.token, payload)
       setCreateSuccess('User created successfully.')
       setNewUser({ userName: '', email: '', password: '', age: '', roles: 'USER' })
       fetchUsers()

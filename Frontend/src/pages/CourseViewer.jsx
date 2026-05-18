@@ -62,7 +62,7 @@ export default function CourseViewer() {
     if (!credentials) return
     setLoading(true)
     try {
-      const res = await getModules(courseId, credentials)
+      const res = await getModules(courseId, credentials.token)
       setModules(Array.isArray(res) ? res : [])
     } catch (e) {
       if (e.status !== 204) setError('Could not load course modules. Did you purchase this course?')
@@ -81,7 +81,7 @@ export default function CourseViewer() {
     setVideos([])
     setChapters([])
     try {
-      const res = await getChapters(courseId, mod.moduleId, credentials)
+      const res = await getChapters(courseId, mod.moduleId, credentials.token)
       setChapters(Array.isArray(res) ? res : [])
     } catch (e) {
       console.error(e)
@@ -93,7 +93,7 @@ export default function CourseViewer() {
     setVideos([])
     // Switch to content view on mobile
     setMobileView('content')
-    getVideos(courseId, activeModule.moduleId, chap.chapterId, credentials)
+    getVideos(courseId, activeModule.moduleId, chap.chapterId, credentials.token)
       .then(res => setVideos(Array.isArray(res) ? res : []))
       .catch(console.error)
   }

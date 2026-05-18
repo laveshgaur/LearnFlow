@@ -30,7 +30,7 @@ export default function StudioCourse() {
     if (!credentials) return
     setLoading(true)
     try {
-      const ms = await getModules(courseId, credentials)
+      const ms = await getModules(courseId, credentials.token)
       setModules(Array.isArray(ms) ? ms : [])
       setActiveModule(null)
       setChapters([])
@@ -48,14 +48,14 @@ export default function StudioCourse() {
 
   async function loadChapters(modId) {
     try {
-      const chs = await getChapters(courseId, modId, credentials)
+      const chs = await getChapters(courseId, modId, credentials.token)
       const chapList = Array.isArray(chs) ? chs : []
       setChapters(chapList)
       // Load videos for each chapter in parallel
       const entries = await Promise.all(
         chapList.map(async (chap) => {
           try {
-            const vids = await getVideos(courseId, modId, chap.chapterId, credentials)
+            const vids = await getVideos(courseId, modId, chap.chapterId, credentials.token)
             return [chap.chapterId, Array.isArray(vids) ? vids : []]
           } catch {
             return [chap.chapterId, []]
@@ -80,7 +80,7 @@ export default function StudioCourse() {
     if (!moduleName.trim()) return
     try {
       const ts = new Date().toISOString()
-      await createModule(courseId, credentials, {
+      await createModule(courseId, credentials.token, {
         moduleName,
         moduleDescription: 'Module Description',
         moduleDuration: '1h',
@@ -100,7 +100,7 @@ export default function StudioCourse() {
   async function handleDeleteModule(modId) {
     if (!window.confirm('Delete this module?')) return
     try {
-      await deleteModule(courseId, modId, credentials)
+      await deleteModule(courseId, modId, credentials.token)
       loadModules()
     } catch (e) {
       setError(e.message || 'Error deleting module')
@@ -112,7 +112,7 @@ export default function StudioCourse() {
     if (!activeModule || !chapterName.trim()) return
     try {
       const ts = new Date().toISOString()
-      await createChapter(courseId, activeModule.moduleId, credentials, {
+      await createChapter(courseId, activeModule.moduleId, credentials.token, {
         chapterName,
         chapterDescription,
         chapterDuration: '10m',
@@ -132,7 +132,7 @@ export default function StudioCourse() {
   async function handleDeleteChapter(chapId) {
     if (!window.confirm('Delete this chapter?')) return
     try {
-      await deleteChapter(courseId, activeModule.moduleId, chapId, credentials)
+      await deleteChapter(courseId, activeModule.moduleId, chapId, credentials.token)
       loadChapters(activeModule.moduleId)
     } catch (e) {
       setError(e.message || 'Error deleting chapter')
@@ -144,9 +144,9 @@ export default function StudioCourse() {
     if (!file) return
     setUploadingChapterId(chapId)
     try {
-      await uploadVideo(credentials, chapId, file.name, file)
+      await uploadVideo(credentials.token, chapId, file.name, file)
       // Refresh videos for this chapter only
-      const vids = await getVideos(courseId, activeModule.moduleId, chapId, credentials)
+      const vids = await getVideos(courseId, activeModule.moduleId, chapId, credentials.token)
       setChapterVideos((prev) => ({ ...prev, [chapId]: Array.isArray(vids) ? vids : [] }))
     } catch (err) {
       setError(err.message || 'Error uploading video')
@@ -161,7 +161,7 @@ export default function StudioCourse() {
     if (!window.confirm('Delete this video? This cannot be undone.')) return
     setDeletingVideoId(videoId)
     try {
-      await deleteVideo(credentials, videoId)
+      await deleteVideo(credentials.token, videoId)
       // Remove from local state immediately
       setChapterVideos((prev) => ({
         ...prev,

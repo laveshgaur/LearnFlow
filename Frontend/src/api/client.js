@@ -15,18 +15,17 @@ function joinUrl(path) {
   return `${base}${p}`
 }
 
-function basicHeader(username, password) {
-  const token = btoa(`${username}:${password}`)
-  return `Basic ${token}`
+function bearerHeader(token) {
+  return `Bearer ${token}`
 }
 
-export async function apiFetch(path, { method = 'GET', body, auth, headers = {} } = {}) {
+export async function apiFetch(path, { method = 'GET', body, token, headers = {} } = {}) {
   const h = new Headers(headers)
   if (body !== undefined && !h.has('Content-Type')) {
     h.set('Content-Type', 'application/json')
   }
-  if (auth?.username && auth?.password) {
-    h.set('Authorization', basicHeader(auth.username, auth.password))
+  if (token) {
+    h.set('Authorization', bearerHeader(token))
   }
   const res = await fetch(joinUrl(path), {
     method,
@@ -51,29 +50,37 @@ export async function apiFetch(path, { method = 'GET', body, auth, headers = {} 
   return data
 }
 
+/** POST /login → returns JWT token string */
+export async function loginUser(username, password) {
+  return apiFetch('/login', {
+    method: 'POST',
+    body: { userName: username, password },
+  })
+}
+
 export async function createUserPublic(payload) {
-  return apiFetch('/create-user', { method: 'POST', body: payload })
+  return apiFetch('/sign-up', { method: 'POST', body: payload })
 }
 
-export async function healthCheck(auth) {
-  return apiFetch('/health-check', { auth })
+export async function healthCheck() {
+  return apiFetch('/health-check')
 }
 
-export async function getProfile(auth) {
-  return apiFetch('/user', { method: 'PUT', auth })
+export async function getProfile(token) {
+  return apiFetch('/user', { method: 'PUT', token })
 }
 
-export async function listUsersAdmin(auth) {
-  return apiFetch('/admin', { auth })
+export async function listUsersAdmin(token) {
+  return apiFetch('/admin', { token })
 }
 
-export async function createUserAdmin(auth, payload) {
-  return apiFetch('/admin/create-user', { method: 'POST', auth, body: payload })
+export async function createUserAdmin(token, payload) {
+  return apiFetch('/admin/create-user', { method: 'POST', token, body: payload })
 }
 
 /** Authenticated learner — enroll / purchase */
-export async function purchaseCourse(auth, courseId) {
-  return apiFetch(`/user/purchase-course/${courseId}`, { method: 'POST', auth })
+export async function purchaseCourse(token, courseId) {
+  return apiFetch(`/user/purchase-course/${courseId}`, { method: 'POST', token })
 }
 
 /** Public catalog — no auth */
@@ -82,40 +89,39 @@ export async function listCourses() {
 }
 
 /** Instructor-only (ROLE_INSTRUCTOR) */
-export async function getInstructorCourses(auth) {
-  return apiFetch('/instructor/get-courses', { auth })
+export async function getInstructorCourses(token) {
+  return apiFetch('/instructor/get-courses', { token })
 }
 
-export async function createCourse(auth, payload) {
-  return apiFetch('/instructor/create-course', { method: 'POST', auth, body: payload })
+export async function createCourse(token, payload) {
+  return apiFetch('/instructor/create-course', { method: 'POST', token, body: payload })
 }
 
-export async function updateInstructorCourse(auth, courseId, payload) {
-  return apiFetch(`/instructor/update-course/${courseId}`, { method: 'PUT', auth, body: payload })
+export async function updateInstructorCourse(token, courseId, payload) {
+  return apiFetch(`/instructor/update-course/${courseId}`, { method: 'PUT', token, body: payload })
 }
 
-export async function deleteInstructorCourse(auth, courseId) {
-  return apiFetch(`/instructor/delete-course/${courseId}`, { method: 'DELETE', auth })
+export async function deleteInstructorCourse(token, courseId) {
+  return apiFetch(`/instructor/delete-course/${courseId}`, { method: 'DELETE', token })
 }
 
-export async function uploadVideo(auth, chapterId, title, file) {
+export async function uploadVideo(token, chapterId, title, file) {
   const formData = new FormData()
   formData.append('chapterId', chapterId)
   formData.append('title', title)
   formData.append('file', file)
 
   const h = new Headers()
-  if (auth?.username && auth?.password) {
-    const token = btoa(`${auth.username}:${auth.password}`)
-    h.set('Authorization', `Basic ${token}`)
+  if (token) {
+    h.set('Authorization', bearerHeader(token))
   }
-  
+
   const res = await fetch(getApiBase() + '/instructor/upload-video', {
     method: 'POST',
     headers: h,
-    body: formData
+    body: formData,
   })
-  
+
   const text = await res.text()
   let data = null
   if (text) {
@@ -134,6 +140,6 @@ export async function uploadVideo(auth, chapterId, title, file) {
   return data
 }
 
-export async function deleteVideo(auth, videoId) {
-  return apiFetch(`/instructor/delete-video/${videoId}`, { method: 'DELETE', auth })
+export async function deleteVideo(token, videoId) {
+  return apiFetch(`/instructor/delete-video/${videoId}`, { method: 'DELETE', token })
 }

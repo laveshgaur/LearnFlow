@@ -14,13 +14,13 @@ function isInstructorRoles(roles) {
 
 function readStored() {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    if (parsed?.username && typeof parsed.password === 'string') {
+    if (parsed?.token && typeof parsed.token === 'string') {
       return {
         username: parsed.username,
-        password: parsed.password,
+        token: parsed.token,
         roles: normalizeRoles(parsed.roles),
       }
     }
@@ -35,26 +35,25 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [credentials, setCredentials] = useState(() => readStored())
 
-  const login = useCallback((username, password, roles = []) => {
-    const next = { username, password, roles: normalizeRoles(roles) }
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+  const login = useCallback((username, token, roles = []) => {
+    const next = { username, token, roles: normalizeRoles(roles) }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
     setCredentials(next)
   }, [])
 
   const logout = useCallback(() => {
-    sessionStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(STORAGE_KEY)
     setCredentials(null)
   }, [])
 
-  /** Re-fetch roles from PUT /user (same as profile sync). */
+  /** Re-fetch roles from PUT /user using the stored JWT token. */
   const refreshRoles = useCallback(async () => {
-    if (!credentials?.username || !credentials?.password) return
-    const auth = { username: credentials.username, password: credentials.password }
+    if (!credentials?.token) return
     try {
-      const profile = await getProfile(auth)
+      const profile = await getProfile(credentials.token)
       const roles = normalizeRoles(profile?.roles)
       const next = { ...credentials, roles }
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
       setCredentials(next)
     } catch {
       /* ignore */
@@ -66,7 +65,7 @@ export function AuthProvider({ children }) {
   const value = useMemo(
     () => ({
       credentials,
-      isAuthenticated: Boolean(credentials?.username),
+      isAuthenticated: Boolean(credentials?.token),
       isInstructor,
       login,
       logout,

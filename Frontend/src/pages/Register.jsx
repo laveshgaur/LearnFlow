@@ -78,10 +78,10 @@ export default function Register() {
       setTimeout(() => navigate('/login'), 1800)
     } catch (err) {
       const msg =
-        err.status === 400
-          ? 'Some fields are invalid. Check your username, email, or password format.'
-          : typeof err.body === 'object' && err.body?.message
-            ? err.body.message
+        typeof err.body === 'object' && err.body?.message
+          ? err.body.message
+          : err.status === 400
+            ? 'Some fields are invalid. Check your username, email, or password format.'
             : err.message || 'Could not create account. Try again.'
       setError(msg)
     } finally {

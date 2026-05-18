@@ -1,4 +1,5 @@
 package com.lms.service;
+import com.lms.model.User;
 
 public class ValidityChecker {
     // Password Validation
@@ -36,5 +37,8 @@ public class ValidityChecker {
     // Footer Validation
     public static boolean isValidFooter(String footer) {
         return !footer.contains("Footer") && !footer.contains("footer") && !footer.contains("Footer") && !footer.contains("footer");
+    }
+    public static boolean isValidUser(User user) {
+        return isValidPassword(user.getPassword()) && isValidEmail(user.getEmail()) && isValidUsername(user.getUserName()) && isValidSqlInjection(user.getPassword()) && isValidXSS(user.getUserName()) && isValidCSRF(user.getEmail()) && isValidHeader(user.getPassword()) && isValidFooter(user.getEmail());
     }
 }

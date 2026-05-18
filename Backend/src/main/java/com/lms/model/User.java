@@ -42,7 +42,7 @@ public class User {
     private List<String> roles;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
-    @JsonManagedReference
+    @JsonManagedReference("course-user")
     private List<Course> courses;
 
     @ManyToMany(fetch = FetchType.EAGER)

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
-import { getProfile, healthCheck } from '../api/client.js'
+import { loginUser, getProfile } from '../api/client.js'
 
 export default function Login() {
   const { login } = useAuth()
@@ -19,12 +19,16 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const auth = { username: username.trim(), password }
     try {
-      await healthCheck(auth)
-      const profile = await getProfile(auth)
+      // Step 1: POST /login → get JWT token
+      const token = await loginUser(username.trim(), password)
+
+      // Step 2: fetch profile using the token to get roles
+      const profile = await getProfile(token)
       const roles   = Array.isArray(profile?.roles) ? profile.roles : []
-      login(auth.username, auth.password, roles)
+
+      // Step 3: store username + token + roles in context/session
+      login(username.trim(), token, roles)
       navigate(from, { replace: true })
     } catch {
       setError('Invalid username or password. Please try again.')
