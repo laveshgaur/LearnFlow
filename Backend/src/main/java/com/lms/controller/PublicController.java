@@ -15,7 +15,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import com.lms.dto.request.LoginRequest;
 import com.lms.dto.request.RegisterRequest;
-import com.lms.dto.response.UserResponse;
 import com.lms.dto.mapper.DtoMapper;
 
 @RestController
