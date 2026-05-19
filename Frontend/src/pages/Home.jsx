@@ -26,8 +26,8 @@ const FEATURES = [
 ]
 
 const STATS = [
+  { value: 'JWT',        label: 'Token-based auth + BCrypt' },
   { value: 'RBAC',       label: 'Role-based access' },
-  { value: 'JWT-free',   label: 'HTTP Basic + BCrypt' },
   { value: '4-tier',     label: 'Course → Module → Chapter → Video' },
 ]
 
@@ -41,7 +41,7 @@ export default function Home() {
         <div className="hero-glow" />
         <div className="hero-eyebrow">
           <span className="hero-dot" />
-          Open platform · Free to join
+          JWT-secured access · Free to join
         </div>
         <h1>
           Learn without<br />
@@ -49,7 +49,7 @@ export default function Home() {
         </h1>
         <p>
           Browse a live catalog, enroll instantly, and—if you teach—publish courses
-          with full module & video management. All under one roof.
+          with full module & video management. JWT sign-in keeps every account protected.
         </p>
         <div className="hero-actions">
           <Link to="/courses" className="btn btn-primary btn-lg">

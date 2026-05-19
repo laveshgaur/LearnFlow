@@ -6,6 +6,7 @@
 # === Backend (Java / Maven) ===
 Backend/target/
 Backend/.mvn/wrapper/maven-wrapper.jar
+Backend/export.sh
 
 # === Frontend (Node / Vite) ===
 Frontend/node_modules/

@@ -13,6 +13,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
+import com.lms.dto.request.LoginRequest;
+import com.lms.dto.request.RegisterRequest;
+import com.lms.dto.response.UserResponse;
+import com.lms.dto.mapper.DtoMapper;
 
 @RestController
 @RequestMapping("/")
@@ -31,25 +35,32 @@ public class PublicController {
     private JwtUtil jwtUtil;
 
     @PostMapping("/sign-up")
-    public ResponseEntity<?> signUp(@RequestBody User user) {
+    public ResponseEntity<?> signUp(@RequestBody RegisterRequest request) {
+        User user = new User();
+        user.setUserName(request.userName());
+        user.setEmail(request.email());
+        user.setPassword(request.password());
+        user.setAge(request.age());
+
         if (!ValidityChecker.isValidUser(user)) {
             return new ResponseEntity<>("Invalid user data", HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>(userService.createUser(user), HttpStatus.CREATED);
+        User createdUser = userService.createUser(user);
+        return new ResponseEntity<>(DtoMapper.toUserResponse(createdUser), HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User user) {
-        if (user.getUserName() == null || user.getUserName().isBlank() ||
-                user.getPassword() == null || user.getPassword().isBlank()) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        if (request.userName() == null || request.userName().isBlank() ||
+                request.password() == null || request.password().isBlank()) {
             return new ResponseEntity<>("Missing username or password", HttpStatus.BAD_REQUEST);
         }
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword())
+                    new UsernamePasswordAuthenticationToken(request.userName(), request.password())
             );
             if (authentication.isAuthenticated()) {
-                UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(user.getUserName());
+                UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(request.userName());
                 String token = jwtUtil.generateToken(userDetails.getUsername());
                 return new ResponseEntity<>(token, HttpStatus.OK);
             }

@@ -14,6 +14,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import com.lms.dto.request.ChapterRequest;
+import com.lms.dto.response.ChapterResponse;
+import com.lms.dto.mapper.DtoMapper;
 
 @RestController
 @RequestMapping("/courses/{courseId}/modules/{moduleId}/chapters")
@@ -52,7 +56,7 @@ public class ChapterController {
     // -------------------- GET ALL CHAPTERS --------------------
 
     @GetMapping
-    public ResponseEntity<List<Chapter>> listChapters(
+    public ResponseEntity<?> getChapters(
             @PathVariable int courseId,
             @PathVariable int moduleId) {
 
@@ -63,8 +67,11 @@ public class ChapterController {
         }
 
         List<Chapter> chapters = chapterService.getChaptersByModuleId(moduleId);
+        List<ChapterResponse> responses = chapters.stream()
+                .map(DtoMapper::toChapterResponse)
+                .collect(Collectors.toList());
 
-        return ResponseEntity.ok(chapters);
+        return ResponseEntity.ok(responses);
     }
 
     // -------------------- CREATE CHAPTER --------------------
@@ -73,7 +80,7 @@ public class ChapterController {
     public ResponseEntity<?> createChapter(
             @PathVariable int courseId,
             @PathVariable int moduleId,
-            @RequestBody Chapter chapter,
+            @RequestBody ChapterRequest request,
             Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -95,11 +102,14 @@ public class ChapterController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
+        Chapter chapter = new Chapter();
+        chapter.setChapterName(request.chapterName());
+        chapter.setChapterDescription(request.chapterDescription());
         chapter.setModule(module);
 
         Chapter created = chapterService.createChapter(chapter);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(DtoMapper.toChapterResponse(created));
     }
 
 
@@ -109,7 +119,7 @@ public class ChapterController {
             @PathVariable int courseId,
             @PathVariable int moduleId,
             @PathVariable int chapterId,
-            @RequestBody Chapter chapter,
+            @RequestBody ChapterRequest request,
             Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -138,12 +148,14 @@ public class ChapterController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        chapter.setChapterId(chapterId);
-        chapter.setModule(module);
+        existing.setChapterName(request.chapterName());
+        existing.setChapterDescription(request.chapterDescription());
+        existing.setChapterId(chapterId);
+        existing.setModule(module);
 
-        Chapter updated = chapterService.updateChapter(chapter);
+        Chapter updated = chapterService.updateChapter(existing);
 
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(DtoMapper.toChapterResponse(updated));
     }
 
 

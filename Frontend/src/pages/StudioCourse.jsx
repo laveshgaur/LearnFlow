@@ -86,9 +86,7 @@ export default function StudioCourse() {
         moduleDuration: '1h',
         modulePrice: '0',
         moduleImage: 'no-image.png',
-        moduleStatus: 'PUBLISHED',
-        moduleCreatedAt: ts,
-        moduleUpdatedAt: ts,
+        moduleStatus: 'PUBLISHED'
       })
       setModuleName('')
       loadModules()
@@ -114,12 +112,7 @@ export default function StudioCourse() {
       const ts = new Date().toISOString()
       await createChapter(courseId, activeModule.moduleId, credentials.token, {
         chapterName,
-        chapterDescription,
-        chapterDuration: '10m',
-        chapterPrice: '0',
-        chapterImage: 'no-image.png',
-        chapterCreatedAt: ts,
-        chapterUpdatedAt: ts,
+        chapterDescription
       })
       setChapterName('')
       setChapterDescription('')

@@ -12,6 +12,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.lms.model.Module;
 import java.util.List;
+import java.util.stream.Collectors;
+import com.lms.dto.request.ModuleRequest;
+import com.lms.dto.response.ModuleResponse;
+import com.lms.dto.mapper.DtoMapper;
 
 @RestController
 @RequestMapping("course/{courseId}/modules")
@@ -51,40 +55,59 @@ public class ModuleController {
     // -------------------- ENDPOINTS --------------------
 
     @GetMapping
-    public ResponseEntity<List<Module>> getModules(@PathVariable int courseId) {
+    public ResponseEntity<?> getModules(@PathVariable int courseId) {
         List<Module> modules = moduleService.getModulesByCourseId(courseId);
         if (modules == null || modules.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
-        return ResponseEntity.ok(modules);
+        List<ModuleResponse> responses = modules.stream()
+                .map(DtoMapper::toModuleResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     @PostMapping
     public ResponseEntity<?> createModule(
             @PathVariable int courseId,
-            @RequestBody Module module,
+            @RequestBody ModuleRequest request,
             Authentication authentication) {
 
         if (resolveOwner(authentication, courseId) == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+        Module module = new Module();
+        module.setModuleName(request.moduleName());
+        module.setModuleDescription(request.moduleDescription());
+        module.setModuleDuration(request.moduleDuration());
+        module.setModulePrice(request.modulePrice());
+        module.setModuleImage(request.moduleImage());
+        module.setModuleStatus(request.moduleStatus());
         module.setCourse(courseService.getCourseById(courseId));
-        return ResponseEntity.status(HttpStatus.CREATED).body(moduleService.createModule(module));
+        Module created = moduleService.createModule(module);
+        return ResponseEntity.status(HttpStatus.CREATED).body(DtoMapper.toModuleResponse(created));
     }
 
     @PutMapping("/{moduleId}")
     public ResponseEntity<?> updateModule(
             @PathVariable int courseId,
             @PathVariable int moduleId,
-            @RequestBody Module module,
+            @RequestBody ModuleRequest request,
             Authentication authentication) {
 
         if (resolveOwner(authentication, courseId) == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+        Module module = new Module();
+        module.setModuleName(request.moduleName());
+        module.setModuleDescription(request.moduleDescription());
+        module.setModuleDuration(request.moduleDuration());
+        module.setModulePrice(request.modulePrice());
+        module.setModuleImage(request.moduleImage());
+        module.setModuleStatus(request.moduleStatus());
         module.setCourse(courseService.getCourseById(courseId));
         module.setModuleId(moduleId);
-        return ResponseEntity.ok(moduleService.updateModule(module));
+        Module updated = moduleService.updateModule(module);
+        return ResponseEntity.ok(DtoMapper.toModuleResponse(updated));
     }
 
     @DeleteMapping("/{moduleId}")

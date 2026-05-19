@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import com.lms.dto.response.UserResponse;
+import com.lms.dto.mapper.DtoMapper;
 
 @RestController
 @RequestMapping("/user")
@@ -24,7 +26,7 @@ public class UserController {
     
     @Transactional
     @PutMapping
-    public ResponseEntity<User> getProfile() {
+    public ResponseEntity<UserResponse> getProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -38,7 +40,7 @@ public class UserController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         userService.updateUser(user);
-        return new ResponseEntity<>(user, HttpStatus.OK);
+        return new ResponseEntity<>(DtoMapper.toUserResponse(user), HttpStatus.OK);
     }
 
     @Transactional

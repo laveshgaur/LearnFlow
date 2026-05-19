@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import com.lms.dto.response.CourseResponse;
+import com.lms.dto.mapper.DtoMapper;
 
 @RestController
 @RequestMapping("/courses")
@@ -18,11 +21,14 @@ public class CourseController {
     @Autowired
     private CourseService courseService;
     @GetMapping
-    public ResponseEntity<List<Course>> listCourses() {
+    public ResponseEntity<?> listCourses() {
         List<Course> courses = courseService.getPublishedCourses();
         if (courses == null || courses.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
-        return ResponseEntity.ok(courses);
+        List<CourseResponse> responses = courses.stream()
+                .map(DtoMapper::toCourseResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 }

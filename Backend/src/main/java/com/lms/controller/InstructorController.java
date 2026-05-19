@@ -21,6 +21,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.stream.Collectors;
+import com.lms.dto.request.CourseRequest;
+import com.lms.dto.response.CourseResponse;
+import com.lms.dto.mapper.DtoMapper;
 
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -72,7 +76,10 @@ public class InstructorController {
         }
 
         List<Course> courses = courseService.getCoursesByUserId(user.getId());
-        return ResponseEntity.ok(courses);
+        List<CourseResponse> responses = courses.stream()
+                .map(DtoMapper::toCourseResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     
@@ -198,17 +205,27 @@ public class InstructorController {
 
 
     @PostMapping("/create-course")
-    public ResponseEntity<?> createCourse(@RequestBody Course course) {
+    public ResponseEntity<?> createCourse(@RequestBody CourseRequest request) {
         User user = getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        Course course = new Course();
+        course.setCourseName(request.courseName());
+        course.setCourseDescription(request.courseDescription());
+        course.setCourseDuration(request.courseDuration());
+        course.setCoursePrice(request.coursePrice());
+        course.setCourseImage(request.courseImage());
+        course.setCourseStatus(request.courseStatus());
+        course.setCourseCreatedAt(OffsetDateTime.now().toString());
+        course.setCourseUpdatedAt(OffsetDateTime.now().toString());
+
         course.setInstructor(user);
         course.setUser(user);
         Course created = courseService.createCourse(course);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(DtoMapper.toCourseResponse(created));
     }
 
     
@@ -236,7 +253,7 @@ public class InstructorController {
     @PutMapping("/update-course/{courseId}")
     public ResponseEntity<?> updateCourse(
             @PathVariable int courseId,
-            @RequestBody Course incoming) {
+            @RequestBody CourseRequest incoming) {
 
         User user = getAuthenticatedUser();
         if (user == null) {
@@ -253,16 +270,16 @@ public class InstructorController {
         }
 
     
-        existing.setCourseName(incoming.getCourseName());
-        existing.setCourseDescription(incoming.getCourseDescription());
-        existing.setCourseDuration(incoming.getCourseDuration());
-        existing.setCoursePrice(incoming.getCoursePrice());
-        existing.setCourseImage(incoming.getCourseImage());
-        existing.setCourseStatus(incoming.getCourseStatus());
+        existing.setCourseName(incoming.courseName());
+        existing.setCourseDescription(incoming.courseDescription());
+        existing.setCourseDuration(incoming.courseDuration());
+        existing.setCoursePrice(incoming.coursePrice());
+        existing.setCourseImage(incoming.courseImage());
+        existing.setCourseStatus(incoming.courseStatus());
         existing.setCourseUpdatedAt(OffsetDateTime.now().toString());
 
         Course updated = courseService.updateCourse(existing);
 
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(DtoMapper.toCourseResponse(updated));
     }
 }

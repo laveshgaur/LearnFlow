@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import com.lms.dto.response.VideoResponse;
+import com.lms.dto.mapper.DtoMapper;
 
 @RestController
 @RequestMapping("/courses/{courseId}/modules/{moduleId}/chapters/{chapterId}/videos")
@@ -27,7 +30,7 @@ public class VideoController {
     private ModuleService moduleService;
 
     @GetMapping
-    public ResponseEntity<List<Video>> listVideos(
+    public ResponseEntity<?> listVideos(
             @PathVariable int courseId,
             @PathVariable int moduleId,
             @PathVariable int chapterId) {
@@ -48,6 +51,9 @@ public class VideoController {
 
         // Any authenticated user can view videos (learners + instructors)
         List<Video> videos = videoService.getVideosByChapterId(chapterId);
-        return ResponseEntity.ok(videos);
+        List<VideoResponse> responses = videos.stream()
+                .map(DtoMapper::toVideoResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 }
