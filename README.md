@@ -43,7 +43,7 @@
 
 ### For Learners (USER role)
 - 📖 Browse the **public course catalog** without authentication
-- 🔐 Register an account and log in with HTTP Basic Auth
+- 🔐 Register an account and log in with JWT Authentication
 - 🛒 **Enroll / purchase** published courses
 - 📊 View personal **dashboard** with profile info and enrolled courses
 - 🎬 **Course Viewer** — browse modules, chapters, and watch videos
@@ -66,8 +66,8 @@
 
 ### Platform-Wide
 - 🛡️ **Role-Based Access Control (RBAC)** enforced at both the API and UI levels
-- 🔑 **HTTP Basic Authentication** with BCrypt password hashing
-- ♻️ **Session-persisted credentials** via `sessionStorage` on the frontend
+- 🔑 **JWT (JSON Web Token) Authentication** with BCrypt password hashing
+- ♻️ **Session-persisted credentials** via `localStorage` on the frontend
 - 📱 **Responsive design** — collapsible sidebar + mobile-optimised course viewer
 - ⚡ **Vite dev proxy** for seamless frontend-to-backend communication
 
@@ -86,7 +86,7 @@
 │      └─────────┴──────────┴─────────┴──────────┘       │
 │                         │                               │
 │              api/client.js + api/modules.js             │
-│             (fetch + Basic Auth header)                  │
+│             (fetch + JWT Bearer token)                   │
 └─────────────────────────┬───────────────────────────────┘
                           │  Vite proxy: /api → :8080
                           ▼
@@ -99,6 +99,7 @@
 │   │   • ADMIN:  GET /admin/**, POST /admin/**        │  │
 │   │   • INSTRUCTOR: /instructor/**                   │  │
 │   │   • USER:   /user/**                             │  │
+│   │   • JwtFilter validates JWT token in header      │  │
 │   └──────────────────┬───────────────────────────────┘  │
 │                      │                                   │
 │   ┌─────────────┐  ┌┴────────────┐  ┌────────────────┐ │
@@ -127,7 +128,7 @@
 | **Storage**   | Cloudinary (video upload & delete via SDK)                     |
 | **Language**  | Java 17, JavaScript (ES Modules)                               |
 | **Build**     | Maven (backend), Vite (frontend)                               |
-| **Auth**      | HTTP Basic Authentication, BCrypt password hashing             |
+| **Auth**      | JWT (JSON Web Token), BCrypt password hashing                  |
 | **ORM**       | Hibernate (via Spring Data JPA)                                |
 | **Tooling**   | Lombok, Spring Boot DevTools, SLF4J logging                    |
 
@@ -289,7 +290,15 @@ LearnFlow/
 │       │   ├── VideoController.java           # GET videos by chapter
 │       │   ├── UserController.java            # Profile + purchase
 │       │   └── PublicController.java          # POST /create-user
-│       ├── model/
+│       │   ├── dto/
+│       │   │   ├── request/                   # Request DTOs
+│       │   │   ├── response/                  # Response DTOs
+│       │   │   └── mapper/DtoMapper.java      # Entity to DTO mappers
+│       │   ├── filter/
+│       │   │   └── JwtFilter.java             # Intercepts and validates JWTs
+│       │   ├── utils/
+│       │   │   └── JwtUtil.java               # JWT generation and validation
+│       │   ├── model/
 │       │   ├── User.java
 │       │   ├── Course.java
 │       │   ├── Module.java
