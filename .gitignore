@@ -19,3 +19,7 @@ Thumbs.db
 # === Env ===
 *.env
 *.env.local
+
+
+HLD_LearnFlow.md
+LLD_LearnFlow.md
