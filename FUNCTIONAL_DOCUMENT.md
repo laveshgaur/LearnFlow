@@ -51,7 +51,7 @@ LearnFlow allows:
 
 ### 4.1 User Registration & Login
 - Users can create an account
-- Users can log in securely with HTTP Basic Auth
+- Users can log in securely using JWT (JSON Web Tokens)
 - System identifies user role after login
 
 ---
