@@ -6,7 +6,6 @@
 # === Backend (Java / Maven) ===
 Backend/target/
 Backend/.mvn/wrapper/maven-wrapper.jar
-Backend/export.sh
 
 # === Frontend (Node / Vite) ===
 Frontend/node_modules/
@@ -21,5 +20,12 @@ Thumbs.db
 *.env.local
 
 
+# === HLD & LLD ===
 HLD_LearnFlow.md
 LLD_LearnFlow.md
+
+# === Scripts ===
+export.sh
+
+# === Logs ===
+*.log
