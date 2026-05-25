@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 @Service
 public class FileUploadService {
@@ -18,6 +19,25 @@ public class FileUploadService {
 
     public FileUploadService(Cloudinary cloudinary) {
         this.cloudinary = cloudinary;
+    }
+
+    /**
+     * Generate a signature for direct frontend-to-Cloudinary signed uploads.
+     * The API secret never leaves the backend.
+     *
+     * @param paramsToSign map of upload parameters (timestamp, folder, etc.)
+     * @return the signature string
+     */
+    public String generateSignature(Map<String, Object> paramsToSign) {
+        return cloudinary.apiSignRequest(paramsToSign, cloudinary.config.apiSecret);
+    }
+
+    public String getApiKey() {
+        return cloudinary.config.apiKey;
+    }
+
+    public String getCloudName() {
+        return cloudinary.config.cloudName;
     }
 
     /**

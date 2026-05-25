@@ -25,6 +25,9 @@ public class Video {
     @Column(name = "duration_in_seconds", nullable = false)
     private int durationInSeconds;
 
+    @Column(name = "cloudinary_public_id")
+    private String cloudinaryPublicId;
+
     @ManyToOne
     @JoinColumn(name = "chapter_id", nullable = false)
     @JsonBackReference

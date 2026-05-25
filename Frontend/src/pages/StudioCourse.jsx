@@ -24,6 +24,7 @@ export default function StudioCourse() {
   // videos per chapter: { [chapterId]: Video[] }
   const [chapterVideos, setChapterVideos] = useState({})
   const [uploadingChapterId, setUploadingChapterId] = useState(null)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [deletingVideoId, setDeletingVideoId] = useState(null)
 
   const loadModules = useCallback(async () => {
@@ -136,8 +137,11 @@ export default function StudioCourse() {
     const file = e.target.files[0]
     if (!file) return
     setUploadingChapterId(chapId)
+    setUploadProgress(0)
     try {
-      await uploadVideo(credentials.token, chapId, file.name, file)
+      await uploadVideo(credentials.token, chapId, file.name, file, (percent) => {
+        setUploadProgress(percent)
+      })
       // Refresh videos for this chapter only
       const vids = await getVideos(courseId, activeModule.moduleId, chapId, credentials.token)
       setChapterVideos((prev) => ({ ...prev, [chapId]: Array.isArray(vids) ? vids : [] }))
@@ -145,6 +149,7 @@ export default function StudioCourse() {
       setError(err.message || 'Error uploading video')
     } finally {
       setUploadingChapterId(null)
+      setUploadProgress(0)
       // Reset file input
       e.target.value = ''
     }
@@ -285,7 +290,9 @@ export default function StudioCourse() {
                       {/* Upload video */}
                       <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
                         <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
-                          {uploadingChapterId === chap.chapterId ? 'Uploading...' : '+ Upload Video'}
+                          {uploadingChapterId === chap.chapterId
+                            ? (uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : 'Saving...')
+                            : '+ Upload Video'}
                           <input
                             type="file"
                             accept="video/*"
@@ -294,6 +301,23 @@ export default function StudioCourse() {
                             disabled={uploadingChapterId === chap.chapterId}
                           />
                         </label>
+                        {uploadingChapterId === chap.chapterId && (
+                          <div style={{
+                            marginTop: '0.4rem',
+                            background: 'rgba(255,255,255,0.08)',
+                            borderRadius: '4px',
+                            height: '6px',
+                            overflow: 'hidden',
+                          }}>
+                            <div style={{
+                              width: `${uploadProgress}%`,
+                              height: '100%',
+                              background: 'linear-gradient(90deg, #e8a838, #f0c060)',
+                              borderRadius: '4px',
+                              transition: 'width 0.3s ease',
+                            }} />
+                          </div>
+                        )}
                       </div>
 
                       <button

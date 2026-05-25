@@ -20,11 +20,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import java.util.stream.Collectors;
 import com.lms.dto.request.CourseRequest;
 import com.lms.dto.response.CourseResponse;
 import com.lms.dto.mapper.DtoMapper;
+import com.lms.dto.request.VideoUploadRequest;
 
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -83,11 +83,42 @@ public class InstructorController {
     }
 
     
-    @PostMapping("/upload-video")
-    public ResponseEntity<?> uploadVideo(
-            @RequestParam int chapterId,
-            @RequestParam String title,
-            @RequestParam MultipartFile file) {
+    /**
+     * Generate a Cloudinary signature for direct signed uploads from the frontend.
+     * The API secret never leaves the backend — only the computed signature is returned.
+     */
+    @GetMapping("/cloudinary-signature")
+    public ResponseEntity<?> getCloudinarySignature() {
+        User user = getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        long timestamp = System.currentTimeMillis() / 1000L;
+
+        Map<String, Object> paramsToSign = new java.util.TreeMap<>();
+        paramsToSign.put("timestamp", timestamp);
+        paramsToSign.put("folder", "lms_uploads");
+
+        String signature = fileUploadService.generateSignature(paramsToSign);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("signature", signature);
+        result.put("timestamp", timestamp);
+        result.put("apiKey", fileUploadService.getApiKey());
+        result.put("cloudName", fileUploadService.getCloudName());
+        result.put("folder", "lms_uploads");
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Save video metadata after the frontend uploads directly to Cloudinary.
+     * Accepts JSON with the Cloudinary response (publicId, videoUrl) instead
+     * of a MultipartFile — this eliminates the bandwidth load on the backend.
+     */
+    @PostMapping("/save-video")
+    public ResponseEntity<?> saveVideo(@RequestBody VideoUploadRequest request) {
 
         try {
             User user = getAuthenticatedUser();
@@ -95,55 +126,47 @@ public class InstructorController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            if (file.isEmpty()) {
-                return ResponseEntity.badRequest().body("File is empty");
+            if (request.videoUrl() == null || request.videoUrl().isEmpty()) {
+                return ResponseEntity.badRequest().body("Video URL is required");
             }
 
-            String contentType = file.getContentType();
-            if (contentType == null || !contentType.startsWith("video/")) {
-                return ResponseEntity.badRequest().body("Only video files are allowed");
+            if (request.publicId() == null || request.publicId().isEmpty()) {
+                return ResponseEntity.badRequest().body("Public ID is required");
             }
 
-            
-            Chapter chapter = chapterService.getChapterById(chapterId);
+            Chapter chapter = chapterService.getChapterById(request.chapterId());
             if (chapter == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Chapter not found");
             }
-            
-            // Upload video to Cloudinary — returns the secure URL
-            String videoUrl = fileUploadService.uploadVideo(file);
-            if (videoUrl == null || videoUrl.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("File upload failed");
-            }
 
-            // Convert to HLS streaming URL (swaps extension to .m3u8)
-            String hlsUrl = fileUploadService.getHlsUrl(videoUrl);
+            // Convert the Cloudinary secure URL to HLS streaming URL
+            String hlsUrl = fileUploadService.getHlsUrl(request.videoUrl());
             if (hlsUrl == null || hlsUrl.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("HLS conversion failed");
             }
-            // Save video
+
             Video video = new Video();
-            video.setVideoTitle(title);
+            video.setVideoTitle(request.title());
             video.setVideoUrl(hlsUrl);
-            video.setDurationInSeconds(0); // Placeholder, can be updated later
+            video.setCloudinaryPublicId(request.publicId());
+            video.setDurationInSeconds(0);
             video.setChapter(chapter);
 
             Video savedVideo = videoService.saveVideo(video);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "Video uploaded successfully");
+            response.put("message", "Video saved successfully");
             response.put("videoId", savedVideo.getVideoId());
             response.put("url", savedVideo.getVideoUrl());
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            logger.error("Video upload error", e);
+            logger.error("Video save error", e);
 
             Map<String, Object> error = new HashMap<>();
-            error.put("error", "Upload failed: " + e.getMessage());
+            error.put("error", "Save failed: " + e.getMessage());
             error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
@@ -177,24 +200,35 @@ public class InstructorController {
         if (course.getInstructor() == null || !course.getInstructor().getId().equals(user.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        Video existing = videoService.getVideoById(videoId);
-        if (existing == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-        String videoUrl = existing.getVideoUrl();
-        String publicId;
-        int folderIdx = videoUrl.indexOf("lms_uploads/");
-        if (folderIdx != -1) {
-            String pathWithExt = videoUrl.substring(folderIdx);
-            publicId = pathWithExt.substring(0, pathWithExt.lastIndexOf("."));
+
+        // Use stored public ID for Cloudinary deletion
+        String publicId = video.getCloudinaryPublicId();
+        if (publicId != null && !publicId.isEmpty()) {
+            try {
+                fileUploadService.deleteFile(publicId);
+            } catch (Exception e) {
+                logger.error("Cloudinary deletion failed for publicId: {}", publicId, e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
         } else {
-            publicId = "lms_uploads/" + videoUrl.substring(videoUrl.lastIndexOf("/") + 1, videoUrl.lastIndexOf("."));
+            // Fallback: parse public ID from URL for older videos without stored publicId
+            String videoUrl = video.getVideoUrl();
+            String fallbackPublicId;
+            int folderIdx = videoUrl.indexOf("lms_uploads/");
+            if (folderIdx != -1) {
+                String pathWithExt = videoUrl.substring(folderIdx);
+                fallbackPublicId = pathWithExt.substring(0, pathWithExt.lastIndexOf("."));
+            } else {
+                fallbackPublicId = "lms_uploads/" + videoUrl.substring(videoUrl.lastIndexOf("/") + 1, videoUrl.lastIndexOf("."));
+            }
+            try {
+                fileUploadService.deleteFile(fallbackPublicId);
+            } catch (Exception e) {
+                logger.error("Cloudinary deletion failed for fallback publicId: {}", fallbackPublicId, e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
         }
-        try {
-            fileUploadService.deleteFile(publicId);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+
         try {
             videoService.deleteVideo(videoId);
         } catch (Exception e) {

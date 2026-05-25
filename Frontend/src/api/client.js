@@ -105,39 +105,72 @@ export async function deleteInstructorCourse(token, courseId) {
   return apiFetch(`/instructor/delete-course/${courseId}`, { method: 'DELETE', token })
 }
 
-export async function uploadVideo(token, chapterId, title, file) {
+/**
+ * Upload video directly to Cloudinary from the browser (signed upload),
+ * then notify the backend to save the HLS URL in the database.
+ *
+ * Flow:
+ *   1. GET /instructor/cloudinary-signature → { signature, timestamp, apiKey, cloudName, folder }
+ *   2. POST to Cloudinary with the signature (video goes browser → Cloudinary, not through backend)
+ *   3. POST /instructor/save-video → backend saves HLS URL in MySQL
+ *
+ * @param {string} token - JWT auth token
+ * @param {number} chapterId - target chapter ID
+ * @param {string} title - video title
+ * @param {File} file - video file from input
+ * @param {function} [onProgress] - optional (percent) => void callback
+ */
+export async function uploadVideo(token, chapterId, title, file, onProgress) {
+  // Step 1: Get a signed upload signature from the backend
+  const sigData = await apiFetch('/instructor/cloudinary-signature', { token })
+  const { signature, timestamp, apiKey, cloudName, folder } = sigData
+
+  // Step 2: Upload directly to Cloudinary with the signature
   const formData = new FormData()
-  formData.append('chapterId', chapterId)
-  formData.append('title', title)
   formData.append('file', file)
+  formData.append('api_key', apiKey)
+  formData.append('timestamp', timestamp)
+  formData.append('signature', signature)
+  formData.append('folder', folder)
 
-  const h = new Headers()
-  if (token) {
-    h.set('Authorization', bearerHeader(token))
-  }
+  const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`
 
-  const res = await fetch(getApiBase() + '/instructor/upload-video', {
-    method: 'POST',
-    headers: h,
-    body: formData,
+  const cloudinaryRes = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', cloudinaryUrl)
+
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100))
+        }
+      }
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText))
+      } else {
+        let errMsg = `Cloudinary upload failed (${xhr.status})`
+        try {
+          const body = JSON.parse(xhr.responseText)
+          errMsg = body?.error?.message || errMsg
+        } catch { /* ignore */ }
+        reject(new Error(errMsg))
+      }
+    }
+    xhr.onerror = () => reject(new Error('Network error during Cloudinary upload'))
+    xhr.send(formData)
   })
 
-  const text = await res.text()
-  let data = null
-  if (text) {
-    try {
-      data = JSON.parse(text)
-    } catch {
-      data = text
-    }
-  }
-  if (!res.ok) {
-    const err = new Error(res.statusText || 'Request failed')
-    err.status = res.status
-    err.body = data
-    throw err
-  }
-  return data
+  const { public_id: publicId, secure_url: videoUrl } = cloudinaryRes
+
+  // Step 3: Tell the backend to save the HLS link in the DB
+  return apiFetch('/instructor/save-video', {
+    method: 'POST',
+    token,
+    body: { chapterId, title, publicId, videoUrl },
+  })
 }
 
 export async function deleteVideo(token, videoId) {

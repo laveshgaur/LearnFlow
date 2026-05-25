@@ -114,6 +114,9 @@ export default function VideoPlayer({ src }) {
             <video
                 ref={videoRef}
                 controls
+                controlsList="nodownload"
+                disablePictureInPicture
+                onContextMenu={(e) => e.preventDefault()}
                 playsInline
                 style={{
                     display: 'block',
