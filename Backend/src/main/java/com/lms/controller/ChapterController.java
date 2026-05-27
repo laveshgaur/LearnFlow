@@ -19,14 +19,10 @@ import com.lms.dto.request.ChapterRequest;
 import com.lms.dto.response.ChapterResponse;
 import com.lms.dto.mapper.DtoMapper;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/courses/{courseId}/modules/{moduleId}/chapters")
 public class ChapterController {
-
-    private static final Logger logger = LoggerFactory.getLogger(ChapterController.class);
 
     @Autowired
     private ChapterService chapterService;
