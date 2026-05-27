@@ -10,6 +10,9 @@ const NAV_ITEMS = [
 
 const AUTH_ITEMS = [
   { to: '/dashboard', label: 'Dashboard',         icon: '◉' },
+]
+
+const ADMIN_ITEMS = [
   { to: '/admin',     label: 'Admin',             icon: '⚙' },
 ]
 
@@ -17,7 +20,7 @@ const INST_ITEMS = [
   { to: '/studio',    label: 'Studio',            icon: '✦' },
 ]
 
-function NavItems({ onNavigate, isAuthenticated, isInstructor, credentials }) {
+function NavItems({ onNavigate, isAuthenticated, isInstructor, isAdmin, credentials }) {
   const cls = ({ isActive }) => (isActive ? 'sb-link is-active' : 'sb-link')
   return (
     <>
@@ -44,6 +47,12 @@ function NavItems({ onNavigate, isAuthenticated, isInstructor, credentials }) {
               {label}
             </NavLink>
           ))}
+          {isAdmin && ADMIN_ITEMS.map(({ to, label, icon }) => (
+            <NavLink key={to} to={to} className={cls} onClick={onNavigate}>
+              <span className="sb-ico" aria-hidden>{icon}</span>
+              {label}
+            </NavLink>
+          ))}
         </>
       )}
     </>
@@ -51,7 +60,7 @@ function NavItems({ onNavigate, isAuthenticated, isInstructor, credentials }) {
 }
 
 export default function Layout({ children }) {
-  const { isAuthenticated, isInstructor, logout, credentials } = useAuth()
+  const { isAuthenticated, isInstructor, isAdmin, logout, credentials } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const closeMenu = () => setMenuOpen(false)
 
@@ -95,6 +104,7 @@ export default function Layout({ children }) {
             onNavigate={closeMenu}
             isAuthenticated={isAuthenticated}
             isInstructor={isInstructor}
+            isAdmin={isAdmin}
             credentials={credentials}
           />
         </nav>

@@ -146,12 +146,11 @@ export default function Courses() {
         <div className="card empty-state">
           <div className="empty-icon">◈</div>
           <p>
-            {search ? `No courses match "${search}".` : 'No courses published yet — instructors publish from the Studio.'}
+            {search ? `No courses match "${search}".` : 'No courses published yet — check back soon!'}
           </p>
-          {search
-            ? <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Clear search</button>
-            : <Link to="/studio" className="btn btn-secondary">Open Studio</Link>
-          }
+          {search && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Clear search</button>
+          )}
         </div>
       )}
 

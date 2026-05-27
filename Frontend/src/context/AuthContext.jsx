@@ -12,6 +12,10 @@ function isInstructorRoles(roles) {
   return normalizeRoles(roles).some((r) => r.toUpperCase() === 'INSTRUCTOR')
 }
 
+function isAdminRoles(roles) {
+  return normalizeRoles(roles).some((r) => r.toUpperCase() === 'ADMIN')
+}
+
 function readStored() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -61,17 +65,19 @@ export function AuthProvider({ children }) {
   }, [credentials])
 
   const isInstructor = isInstructorRoles(credentials?.roles)
+  const isAdmin = isAdminRoles(credentials?.roles)
 
   const value = useMemo(
     () => ({
       credentials,
       isAuthenticated: Boolean(credentials?.token),
       isInstructor,
+      isAdmin,
       login,
       logout,
       refreshRoles,
     }),
-    [credentials, isInstructor, login, logout, refreshRoles],
+    [credentials, isInstructor, isAdmin, login, logout, refreshRoles],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
