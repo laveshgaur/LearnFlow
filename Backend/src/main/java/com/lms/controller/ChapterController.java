@@ -19,9 +19,14 @@ import com.lms.dto.request.ChapterRequest;
 import com.lms.dto.response.ChapterResponse;
 import com.lms.dto.mapper.DtoMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestController
 @RequestMapping("/courses/{courseId}/modules/{moduleId}/chapters")
 public class ChapterController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ChapterController.class);
 
     @Autowired
     private ChapterService chapterService;
@@ -34,13 +39,14 @@ public class ChapterController {
 
     // -------------------- HELPER METHODS --------------------
 
-    private boolean isInstructor(User user) {
+    private boolean isInstructorOrAdmin(User user) {
         return user != null
                 && user.getRoles() != null
-                && user.getRoles().contains("INSTRUCTOR");
+                && (user.getRoles().contains("INSTRUCTOR") || user.getRoles().contains("ADMIN"));
     }
 
     private boolean isOwner(User user, Module module) {
+        if (user.getRoles().contains("ADMIN")) return true;
         return module != null
                 && module.getCourse() != null
                 && module.getCourse().getUser() != null
@@ -88,7 +94,7 @@ public class ChapterController {
         }
         User user = userService.getUserByUsername(authentication.getName());
 
-        if (!isInstructor(user)) {
+        if (!isInstructorOrAdmin(user)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -127,7 +133,7 @@ public class ChapterController {
         }
         User user = userService.getUserByUsername(authentication.getName());
 
-        if (!isInstructor(user)) {
+        if (!isInstructorOrAdmin(user)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -171,7 +177,7 @@ public class ChapterController {
         }
         User user = userService.getUserByUsername(authentication.getName());
 
-        if (!isInstructor(user)) {
+        if (!isInstructorOrAdmin(user)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
