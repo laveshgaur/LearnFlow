@@ -12,14 +12,20 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.lms.model.Module;
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 import com.lms.dto.request.ModuleRequest;
 import com.lms.dto.response.ModuleResponse;
 import com.lms.dto.mapper.DtoMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestController
 @RequestMapping("course/{courseId}/modules")
 public class ModuleController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ModuleController.class);
 
     @Autowired
     private ModuleService moduleService;
@@ -32,23 +38,41 @@ public class ModuleController {
 
     // -------------------- HELPERS --------------------
 
-    private boolean isInstructor(User user) {
+    private boolean isInstructorOrAdmin(User user) {
         return user != null
                 && user.getRoles() != null
-                && user.getRoles().contains("INSTRUCTOR");
+                && (user.getRoles().contains("INSTRUCTOR") || user.getRoles().contains("ADMIN"));
     }
 
     
     private User resolveOwner(Authentication authentication, int courseId) {
-        if (authentication == null || !authentication.isAuthenticated()) return null;
+        if (authentication == null || !authentication.isAuthenticated()) {
+            logger.warn("Module access denied: no authentication");
+            return null;
+        }
         User user = userService.getUserByUsername(authentication.getName());
-        if (!isInstructor(user)) return null;
+        if (!isInstructorOrAdmin(user)) {
+            logger.warn("Module access denied: user '{}' lacks INSTRUCTOR or ADMIN role", authentication.getName());
+            return null;
+        }
         Course course = courseService.getCourseById(courseId);
-        if (course == null) return null;
+        if (course == null) {
+            logger.warn("Module access denied: course {} not found", courseId);
+            return null;
+        }
+
+        // ADMIN users can manage any course
+        if (user.getRoles().contains("ADMIN")) {
+            return user;
+        }
+
         String ownerId = course.getInstructor() != null
                 ? course.getInstructor().getId()
                 : (course.getUser() != null ? course.getUser().getId() : null);
-        if (ownerId == null || !ownerId.equals(user.getId())) return null;
+        if (ownerId == null || !ownerId.equals(user.getId())) {
+            logger.warn("Module access denied: user '{}' does not own course {}", authentication.getName(), courseId);
+            return null;
+        }
         return user;
     }
 
@@ -83,6 +107,9 @@ public class ModuleController {
         module.setModuleImage(request.moduleImage());
         module.setModuleStatus(request.moduleStatus());
         module.setCourse(courseService.getCourseById(courseId));
+        String now = LocalDateTime.now().toString();
+        module.setModuleCreatedAt(now);
+        module.setModuleUpdatedAt(now);
         Module created = moduleService.createModule(module);
         return ResponseEntity.status(HttpStatus.CREATED).body(DtoMapper.toModuleResponse(created));
     }
@@ -106,6 +133,7 @@ public class ModuleController {
         module.setModuleStatus(request.moduleStatus());
         module.setCourse(courseService.getCourseById(courseId));
         module.setModuleId(moduleId);
+        module.setModuleUpdatedAt(LocalDateTime.now().toString());
         Module updated = moduleService.updateModule(module);
         return ResponseEntity.ok(DtoMapper.toModuleResponse(updated));
     }
