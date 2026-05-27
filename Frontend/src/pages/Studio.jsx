@@ -153,9 +153,7 @@ export default function Studio() {
           <div>
             <h1>Instructor studio</h1>
             <p className="lede">
-              <code>GET /instructor/get-courses</code> · <code>POST /instructor/create-course</code> ·{' '}
-              <code>PUT /instructor/update-course/&#123;id&#125;</code> ·{' '}
-              <code>DELETE /instructor/delete-course/&#123;id&#125;</code>
+              Create, edit, and manage your courses and content.
             </p>
           </div>
           <span className="badge-role badge-role-inst">ROLE_INSTRUCTOR</span>
@@ -338,7 +336,7 @@ export default function Studio() {
           <div className="modal-card card">
             <h2 id="edit-course-title">Edit course</h2>
             <p className="muted modal-meta">
-              <code>PUT /instructor/update-course/{editing.courseId}</code>
+              Update course details below.
             </p>
             <form className="form-grid" onSubmit={onEditSave}>
               <div>

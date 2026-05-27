@@ -79,7 +79,7 @@ export default function Admin() {
       <header className="page-header">
         <h1>Administration</h1>
         <p className="lede">
-          <code>GET /admin</code> — requires <code>ROLE_ADMIN</code> on the server.
+          Manage platform users, create accounts, and oversee the system.
         </p>
       </header>
 
