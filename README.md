@@ -8,6 +8,7 @@
 ![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 ![Cloudinary](https://img.shields.io/badge/Cloudinary-Video%20Storage-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white)
+![HLS](https://img.shields.io/badge/HLS-Adaptive%20Streaming-FF6600?style=for-the-badge&logo=videolan&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 
@@ -47,6 +48,9 @@
 - 🛒 **Enroll / purchase** published courses
 - 📊 View personal **dashboard** with profile info and enrolled courses
 - 🎬 **Course Viewer** — browse modules, chapters, and watch videos
+  - **HLS adaptive streaming** via `hls.js` with automatic quality adjustment
+  - Automatic **MP4 fallback** if HLS is unavailable or fails
+  - Native HLS support on Safari; `hls.js` polyfill on Chrome/Firefox/Edge
   - Desktop: fixed two-column layout (syllabus + content side-by-side)
   - Mobile: tab-based layout (📚 Syllabus / 📖 Content switch)
 
@@ -57,7 +61,8 @@
 - 🔄 Toggle course status between `DRAFT`, `PUBLISHED`, and `ARCHIVED`
 - 📦 **Manage Modules** — create and delete modules per course
 - 📄 **Manage Chapters** — create and delete chapters per module
-- 🎬 **Upload Videos** to chapters via Cloudinary (with real-time feedback)
+- 🎬 **Upload Videos** to chapters via **direct-to-Cloudinary signed upload** (with real-time progress bar)
+- 🔄 Backend automatically converts Cloudinary URLs to **HLS `.m3u8` streaming URLs** before saving
 - 🗑️ **Delete Videos** — removes both the Cloudinary file and the database record atomically
 
 ### For Admins (ADMIN role)
@@ -108,11 +113,13 @@
 │                            │                 │          │
 │                   FileUploadService    Spring Data JPA  │
 │                   (Cloudinary SDK)            │         │
+│                   + HLS URL gen               │         │
 └────────────────────────────┼─────────────────┼─────────┘
                              │                 │
                     ┌────────┴────┐    ┌───────┴──────────┐
                     │  Cloudinary │    │    MySQL 8.0      │
-                    │  (videos)   │    │   learnFlowDB     │
+                    │  (videos +  │    │   learnFlowDB     │
+                    │  HLS m3u8)  │    │                   │
                     └─────────────┘    └──────────────────┘
 ```
 
@@ -125,7 +132,8 @@
 | **Frontend**  | React 18, React Router 6, Vite 5, Vanilla CSS                  |
 | **Backend**   | Spring Boot 3.2.5, Spring Security, Spring Data JPA            |
 | **Database**  | MySQL 8.0                                                      |
-| **Storage**   | Cloudinary (video upload & delete via SDK)                     |
+| **Storage**   | Cloudinary (video upload & delete via SDK, HLS streaming)      |
+| **Streaming** | HLS (HTTP Live Streaming) via Cloudinary `.m3u8`, `hls.js`    |
 | **Language**  | Java 17, JavaScript (ES Modules)                               |
 | **Build**     | Maven (backend), Vite (frontend)                               |
 | **Auth**      | JWT (JSON Web Token), BCrypt password hashing                  |
@@ -236,6 +244,8 @@ Navigate to **http://localhost:5173** and you're ready to go!
                                                    │ video_id (PK)    │
                                                    │ video_title      │
                                                    │ video_url        │
+                                                   │ cloudinary_      │
+                                                   │   public_id      │
                                                    │ duration_seconds │
                                                    │ chapter_id (FK)  │
                                                    └──────────────────┘
@@ -244,7 +254,8 @@ Navigate to **http://localhost:5173** and you're ready to go!
 ### Key Points
 - **User IDs** are UUIDs; **all other IDs** use auto-increment integers
 - **Passwords** are stored as BCrypt hashes (never plaintext)
-- **Video URLs** point to Cloudinary CDN; the `publicId` is derived at delete time
+- **Video URLs** store Cloudinary **HLS `.m3u8`** URLs (not raw MP4 links)
+- **`cloudinary_public_id`** is persisted for reliable deletion without URL parsing
 - **Hibernate** manages DDL — tables created/updated automatically
 
 ---
@@ -326,6 +337,7 @@ LearnFlow/
 │       ├── context/
 │       │   └── AuthContext.jsx
 │       ├── components/
+│       │   ├── VideoPlayer.jsx          # HLS player (hls.js + MP4 fallback)
 │       │   ├── Layout.jsx
 │       │   └── Layout.css
 │       └── pages/
@@ -376,7 +388,8 @@ POST   /instructor/create-course
 PUT    /instructor/update-course/{courseId}
 DELETE /instructor/delete-course/{courseId}
 
-POST   /instructor/upload-video            # multipart: chapterId, title, file
+GET    /instructor/cloudinary-signature     # signed upload params (sig, apiKey, cloudName)
+POST   /instructor/save-video              # JSON: { chapterId, title, publicId, videoUrl }
 DELETE /instructor/delete-video/{videoId}  # deletes from Cloudinary + DB
 
 GET    /course/{courseId}/modules
@@ -389,7 +402,51 @@ POST   /courses/{courseId}/modules/{moduleId}/chapters
 DELETE /courses/{courseId}/modules/{moduleId}/chapters/{chapterId}
 ```
 
-> **Video delete flow:** The server extracts `lms_uploads/<filename>` as the Cloudinary `publicId`, calls `cloudinary.uploader().destroy()` with `resource_type: video`, then deletes the DB record.
+> **Video upload flow:**
+> 1. Frontend requests a **signed upload** via `GET /instructor/cloudinary-signature`
+> 2. File is uploaded **directly from the browser to Cloudinary** (no backend proxy) with real-time progress
+> 3. Frontend sends the Cloudinary `public_id` and `secure_url` to `POST /instructor/save-video`
+> 4. Backend converts the URL to an **HLS `.m3u8`** URL and stores it alongside the `cloudinary_public_id`
+
+> **Video delete flow:** The server uses the stored `cloudinary_public_id` to call `cloudinary.uploader().destroy()` with `resource_type: video`, then deletes the DB record. Older videos without a stored `publicId` fall back to URL parsing.
+
+---
+
+### 🎥 Video Streaming Pipeline
+
+```
+┌──────────┐    Direct upload     ┌─────────────┐
+│ Browser  │ ──────────────────▶  │ Cloudinary  │
+│ (client) │    (signed, XHR)     │   (CDN)     │
+└────┬─────┘                      └──────┬──────┘
+     │                                   │
+     │ POST /save-video                  │ Stores original
+     │ { publicId, videoUrl }            │ video file
+     ▼                                   │
+┌──────────┐  Converts URL to .m3u8      │
+│ Backend  │ ──────────────────────────▶  │
+│ (Spring) │  Saves HLS URL + publicId   │
+└────┬─────┘                              │
+     │                                    │
+     ▼ DB stores .m3u8 URL                │
+┌──────────┐                              │
+│  MySQL   │                              │
+└──────────┘                              │
+                                          │
+┌──────────┐  GET .m3u8 stream   ┌────────┴─────┐
+│ Learner  │ ◀──────────────────│  Cloudinary   │
+│ Browser  │   (via hls.js)      │  HLS (m3u8)  │
+│ + hls.js │                     └──────────────┘
+└──────────┘
+     │
+     │ Fallback: if HLS fails → direct .mp4 playback
+```
+
+**Key details:**
+- **`hls.js`** handles adaptive bitrate streaming in Chrome, Firefox, and Edge
+- **Safari** uses native HLS support (`application/vnd.apple.mpegurl`)
+- **Automatic MP4 fallback** — if HLS manifest loading fails, the player switches to direct `.mp4` playback
+- **No video data passes through the backend** — uploads go browser → Cloudinary; streams go Cloudinary → browser
 
 ---
 
@@ -445,13 +502,14 @@ POST /admin/create-user                    # Create user with explicit roles
 
 ### Video Entity
 
-| Field               | Type     | Column             | Constraints                 |
-| ------------------- | -------- | ------------------ | --------------------------- |
-| `videoId`           | `int`    | `video_id`         | PK, auto-increment          |
-| `videoTitle`        | `String` | `video_title`      | Not null                    |
-| `videoUrl`          | `String` | `video_url`        | Cloudinary secure URL       |
-| `durationInSeconds` | `int`    | `duration_in_seconds` | Not null                 |
-| `chapter`           | `Chapter`| `chapter_id` (FK)  | Many-to-one                 |
+| Field               | Type     | Column                  | Constraints                 |
+| ------------------- | -------- | ----------------------- | --------------------------- |
+| `videoId`           | `int`    | `video_id`              | PK, auto-increment          |
+| `videoTitle`        | `String` | `video_title`           | Not null                    |
+| `videoUrl`          | `String` | `video_url`             | Cloudinary HLS `.m3u8` URL  |
+| `cloudinaryPublicId`| `String` | `cloudinary_public_id`  | Cloudinary asset identifier |
+| `durationInSeconds` | `int`    | `duration_in_seconds`   | Not null                    |
+| `chapter`           | `Chapter`| `chapter_id` (FK)       | Many-to-one                 |
 
 ---
 
