@@ -9,7 +9,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [empty, setEmpty] = useState(false)
-  
+
   // New user form state
   const [newUser, setNewUser] = useState({ userName: '', email: '', password: '', age: '', roles: 'USER' })
   const [creating, setCreating] = useState(false)
@@ -85,7 +85,7 @@ export default function Admin() {
 
       <div className="card" style={{ marginBottom: '2rem' }}>
         <h2>Create New User</h2>
-        {createError   && <div className="alert alert-error">{createError}</div>}
+        {createError && <div className="alert alert-error">{createError}</div>}
         {createSuccess && <div className="alert alert-success">{createSuccess}</div>}
 
         <form onSubmit={handleCreateUser} style={{ marginTop: '1.25rem' }}>
@@ -192,7 +192,8 @@ export default function Admin() {
                   <th>Email</th>
                   <th>Age</th>
                   <th>Roles</th>
-                  <th>Courses</th>
+                  <th>Enrolled</th>
+                  <th>Created</th>
                 </tr>
               </thead>
               <tbody>
@@ -204,7 +205,8 @@ export default function Admin() {
                     <td>
                       <span className="tag tag-outline">{Array.isArray(u.roles) ? u.roles.join(', ') : '—'}</span>
                     </td>
-                    <td>{Array.isArray(u.courses) ? u.courses.length : '0'}</td>
+                    <td>{Array.isArray(u.enrolledCourses) ? u.enrolledCourses.length : 0}</td>
+                    <td>{Array.isArray(u.courses) ? u.courses.length : 0}</td>
                   </tr>
                 ))}
               </tbody>
