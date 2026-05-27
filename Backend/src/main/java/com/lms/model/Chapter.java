@@ -21,7 +21,9 @@ public class Chapter {
     private int chapterId;
     @Column(name = "chapter_name", nullable = false)
     private String chapterName;
-    @Column(name = "chapter_description", nullable = false)
+    
+    @Lob
+    @Column(name = "chapter_description", nullable = false, columnDefinition = "TEXT")
     private String chapterDescription;
     @Column(name = "chapter_duration", nullable = false)
     private int durationInSeconds;
