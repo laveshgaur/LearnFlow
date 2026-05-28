@@ -94,7 +94,29 @@ export default function Layout({ children }) {
       {/* ── Sidebar ── */}
       <aside className={`sidebar ${menuOpen ? 'is-open' : ''}`} aria-label="Main navigation">
         <Link to="/" className="brand" onClick={closeMenu}>
-          <span className="brand-glyph" aria-hidden />
+          <svg className="brand-glyph" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+            <defs>
+              <linearGradient id="brand-bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#1a1035"/>
+                <stop offset="100%" stopColor="#0d0d1a"/>
+              </linearGradient>
+              <linearGradient id="brand-accent" x1="6" y1="6" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#818cf8"/>
+                <stop offset="50%" stopColor="#6366f1"/>
+                <stop offset="100%" stopColor="#a78bfa"/>
+              </linearGradient>
+              <linearGradient id="brand-flow" x1="18" y1="10" x2="26" y2="24" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#22d3ee"/>
+                <stop offset="100%" stopColor="#6366f1"/>
+              </linearGradient>
+            </defs>
+            <rect width="32" height="32" rx="8" fill="url(#brand-bg)"/>
+            <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" stroke="rgba(255,255,255,0.1)" strokeWidth="1" fill="none"/>
+            <path d="M7 8v16h9" stroke="url(#brand-accent)" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <path d="M19 24V8h8M19 15.5h6" stroke="url(#brand-flow)" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <circle cx="27" cy="8" r="1.8" fill="#22d3ee" opacity="0.9"/>
+            <circle cx="27" cy="8" r="3" fill="#22d3ee" opacity="0.2"/>
+          </svg>
           <span className="brand-text">LearnFlow</span>
         </Link>
         <p className="sb-tagline">Learn · Teach · Grow</p>
