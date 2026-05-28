@@ -58,9 +58,9 @@
 .brand-glyph {
   width: 34px; height: 34px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--indigo), var(--violet));
   box-shadow: 0 4px 14px rgba(99,102,241,0.5);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .brand-text {
