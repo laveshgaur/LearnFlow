@@ -5,7 +5,7 @@
 
 /* ─── Page chrome ─── */
 .page       { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-.page-wide  { max-width: 1160px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+.page-wide  { max-width: 1160px; margin: 0 auto; padding: 2rem 1.5rem 4rem; overflow-x: hidden; }
 .page-bleed { padding: 2rem 0 4rem; }
 
 .page-header { margin-bottom: 2.25rem; }
@@ -277,9 +277,15 @@ a.btn:hover { text-decoration: none; color: inherit; }
 /* ─── Stats row ─── */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   margin: 1.75rem 0;
+}
+@media (max-width: 600px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
 }
 .stat-tile {
   background: var(--surface);
@@ -287,6 +293,8 @@ a.btn:hover { text-decoration: none; color: inherit; }
   border-radius: var(--radius-sm);
   padding: 1.25rem 1.35rem;
   transition: border-color 0.2s var(--ease);
+  min-width: 0;
+  overflow: hidden;
 }
 .stat-tile:hover { border-color: rgba(99,102,241,0.3); }
 .stat-tile .value {
@@ -305,6 +313,7 @@ a.btn:hover { text-decoration: none; color: inherit; }
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-muted);
+  word-break: break-word;
 }
 
 /* ─── Tables ─── */
@@ -402,8 +411,8 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; 
 .auth-logo-glyph {
   width: 36px; height: 36px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--indigo), var(--violet));
   box-shadow: 0 4px 16px rgba(99,102,241,0.5);
+  overflow: hidden;
 }
 .auth-title {
   font-size: 1.85rem;
@@ -447,6 +456,7 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; 
   text-align: center;
   padding: 5rem 1rem 4rem;
   position: relative;
+  overflow: hidden;
 }
 .hero-eyebrow {
   display: inline-flex;
@@ -491,7 +501,8 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; 
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 700px; height: 400px;
+  width: min(700px, 100%);
+  height: 400px;
   background: radial-gradient(ellipse, rgba(99,102,241,0.12) 0%, transparent 70%);
   filter: blur(40px);
   pointer-events: none;
@@ -708,4 +719,20 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; 
     max-height: calc(100vh - 8rem);
     overflow-y: auto;
   }
+}
+
+/* ─── Home page mobile tweaks ─── */
+@media (max-width: 480px) {
+  .page-wide { padding: 1rem 1rem 3rem; }
+
+  .hero-marketing { padding: 3rem 0.5rem 2.5rem; }
+  .hero-marketing p { font-size: 0.95rem; margin-bottom: 1.5rem; }
+  .hero-eyebrow { font-size: 0.68rem; padding: 0.3rem 0.7rem; }
+
+  .hero-actions { gap: 0.75rem; }
+  .hero-actions .btn-lg { padding: 0.75rem 1.4rem; font-size: 0.9rem; }
+
+  .home-tile { padding: 1.35rem; }
+  .home-tile h2 { font-size: 1rem; }
+  .home-tile p { font-size: 0.82rem; }
 }
