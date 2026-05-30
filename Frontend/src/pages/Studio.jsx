@@ -223,6 +223,9 @@ export default function Studio() {
                           <Link to={`/studio/course/${c.courseId}`} className="btn btn-ghost btn-sm">
                             Manage Content
                           </Link>
+                          <Link to={`/studio/course/${c.courseId}/analytics`} className="btn btn-ghost btn-sm">
+                            📊 Analytics
+                          </Link>
                         </td>
                       </tr>
                     ))}
