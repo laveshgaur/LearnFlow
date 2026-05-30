@@ -10,6 +10,7 @@ import Register from './pages/Register.jsx'
 import Login from './pages/Login.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Admin from './pages/Admin.jsx'
+import Analytics from './pages/Analytics.jsx'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/course/:courseId" element={<CourseViewer />} />
         <Route path="/studio" element={<Studio />} />
         <Route path="/studio/course/:courseId" element={<StudioCourse />} />
+        <Route path="/studio/course/:courseId/analytics" element={<Analytics />} />
         <Route path="/teach" element={<Studio />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
