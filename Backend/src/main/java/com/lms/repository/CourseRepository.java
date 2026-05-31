@@ -2,10 +2,15 @@ package com.lms.repository;
 
 import com.lms.model.Course;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
 public interface CourseRepository extends JpaRepository<Course, Integer> {
+
+    @Query("SELECT COUNT(u) FROM User u JOIN u.enrolledCourses c WHERE c.courseId = :courseId")
+    long countEnrolledUsers(@Param("courseId") int courseId);
     Course findByCourseName(String courseName);
     Course findByCourseId(int courseId);
     Course findByCourseDescription(String courseDescription);
