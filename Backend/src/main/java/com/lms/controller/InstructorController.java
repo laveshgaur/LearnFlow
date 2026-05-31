@@ -7,6 +7,7 @@ import com.lms.model.Video;
 import com.lms.model.Module;
 import com.lms.service.ChapterService;
 import com.lms.service.CourseService;
+import com.lms.service.ChapterProgressService;
 import com.lms.service.FileUploadService;
 import com.lms.service.UserService;
 import com.lms.service.VideoService;
@@ -51,6 +52,9 @@ public class InstructorController {
 
     @Autowired
     private VideoService videoService;
+
+    @Autowired
+    private ChapterProgressService chapterProgressService;
 
    
     private User getAuthenticatedUser() {
@@ -315,5 +319,59 @@ public class InstructorController {
         Course updated = courseService.updateCourse(existing);
 
         return ResponseEntity.ok(DtoMapper.toCourseResponse(updated));
+    }
+
+    /**
+     * GET /instructor/analytics/{courseId}
+     * Returns per-course metrics for the instructor dashboard.
+     */
+    @GetMapping("/analytics/{courseId}")
+    public ResponseEntity<?> getCourseAnalytics(@PathVariable int courseId) {
+        User user = getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Course course = courseService.getCourseById(courseId);
+        if (course == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // Allow admin or course owner
+        boolean isAdmin = user.getRoles() != null && user.getRoles().contains("ADMIN");
+        boolean isOwner = course.getInstructor() != null && course.getInstructor().getId().equals(user.getId());
+        if (!isAdmin && !isOwner) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // Gather metrics
+        long enrolledCount = courseService.countEnrolledUsers(courseId);
+        List<com.lms.model.Module> modules = course.getModules() != null ? course.getModules() : List.of();
+        int moduleCount = modules.size();
+        int chapterCount = 0;
+        int videoCount = 0;
+        for (com.lms.model.Module mod : modules) {
+            List<com.lms.model.Chapter> chapters = mod.getChapters() != null ? mod.getChapters() : List.of();
+            chapterCount += chapters.size();
+            for (com.lms.model.Chapter ch : chapters) {
+                videoCount += videoService.getVideosByChapterId(ch.getChapterId()).size();
+            }
+        }
+        long completedChapters = chapterProgressService.countCompletedByCourse(courseId);
+        long totalPossible = (long) chapterCount * enrolledCount;
+        double completionRate = totalPossible > 0 ? Math.round((double) completedChapters / totalPossible * 10000.0) / 100.0 : 0;
+
+        Map<String, Object> analytics = new HashMap<>();
+        analytics.put("courseId", courseId);
+        analytics.put("courseName", course.getCourseName());
+        analytics.put("enrolledCount", enrolledCount);
+        analytics.put("moduleCount", moduleCount);
+        analytics.put("chapterCount", chapterCount);
+        analytics.put("videoCount", videoCount);
+        analytics.put("completedChapters", completedChapters);
+        analytics.put("totalPossibleCompletions", totalPossible);
+        analytics.put("completionRate", completionRate);
+
+        return ResponseEntity.ok(analytics);
     }
 }
