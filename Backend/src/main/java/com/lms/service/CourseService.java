@@ -46,6 +46,10 @@ public class CourseService {
     public void deleteCourse(int courseId){
         courseRepository.deleteById(courseId);
     }
+    public long countEnrolledUsers(int courseId) {
+        return courseRepository.countEnrolledUsers(courseId);
+    }
+
     public void purchaseCourse(int courseId, User user) {
         Course course = getCourseById(courseId);
         if (course == null) {
