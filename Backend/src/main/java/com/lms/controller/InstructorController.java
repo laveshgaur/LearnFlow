@@ -117,6 +117,41 @@ public class InstructorController {
     }
 
     /**
+     * POST /instructor/upload-cover
+     * Uploads a cover image to Cloudinary and returns the secure URL.
+     * Accepts multipart/form-data with a single 'file' part.
+     */
+    @PostMapping("/upload-cover")
+    public ResponseEntity<?> uploadCoverImage(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        User user = getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("File is required");
+        }
+
+        // Validate file type
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return ResponseEntity.badRequest().body("Only image files are allowed");
+        }
+
+        try {
+            String url = fileUploadService.uploadFile(file);
+            Map<String, Object> response = new HashMap<>();
+            response.put("url", url);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Cover image upload failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Upload failed: " + e.getMessage());
+        }
+    }
+
+    /**
      * Save video metadata after the frontend uploads directly to Cloudinary.
      * Accepts JSON with the Cloudinary response (publicId, videoUrl) instead
      * of a MultipartFile — this eliminates the bandwidth load on the backend.
