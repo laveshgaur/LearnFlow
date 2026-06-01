@@ -38,6 +38,12 @@ public class ProgressController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private QuizService quizService;
+
+    @Autowired
+    private ModuleService moduleService;
+
     private User getAuthenticatedUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) return null;
@@ -69,7 +75,26 @@ public class ProgressController {
             return m;
         }).collect(Collectors.toList());
 
-        return ResponseEntity.ok(result);
+        // Also include per-module quiz pass status
+        List<com.lms.model.Module> modules = moduleService.getModulesByCourseId(courseId);
+        List<Map<String, Object>> quizStatuses = new ArrayList<>();
+        if (modules != null) {
+            for (com.lms.model.Module mod : modules) {
+                quizService.getQuizByModuleId(mod.getModuleId()).ifPresent(quiz -> {
+                    Map<String, Object> qs = new HashMap<>();
+                    qs.put("moduleId", mod.getModuleId());
+                    qs.put("quizId", quiz.getQuizId());
+                    qs.put("passed", quizService.hasUserPassedQuiz(user.getId(), quiz.getQuizId()));
+                    quizStatuses.add(qs);
+                });
+            }
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("chapters", result);
+        response.put("quizStatuses", quizStatuses);
+
+        return ResponseEntity.ok(response);
     }
 
     // ───────────── Video watch progress ─────────────
