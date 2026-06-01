@@ -4,6 +4,7 @@ import com.lms.model.Course;
 import com.lms.model.User;
 import com.lms.service.CourseService;
 import com.lms.service.ModuleService;
+import com.lms.service.QuizService;
 import com.lms.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.lms.model.Module;
 import java.util.List;
+import java.util.Map;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 import com.lms.dto.request.ModuleRequest;
@@ -35,6 +37,9 @@ public class ModuleController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private QuizService quizService;
 
     // -------------------- HELPERS --------------------
 
@@ -98,6 +103,16 @@ public class ModuleController {
 
         if (resolveOwner(authentication, courseId) == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // ── Gate: previous module must have a quiz before creating a new one ──
+        List<Module> existing = moduleService.getModulesByCourseId(courseId);
+        if (existing != null && !existing.isEmpty()) {
+            Module lastModule = existing.get(existing.size() - 1);
+            if (!quizService.hasQuiz(lastModule.getModuleId())) {
+                return ResponseEntity.badRequest().body(
+                    Map.of("error", "Please add a test/quiz to the module '" + lastModule.getModuleName() + "' before creating a new module."));
+            }
         }
         Module module = new Module();
         module.setModuleName(request.moduleName());
