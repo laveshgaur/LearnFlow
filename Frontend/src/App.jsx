@@ -11,6 +11,7 @@ import Login from './pages/Login.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Admin from './pages/Admin.jsx'
 import Analytics from './pages/Analytics.jsx'
+import CreateCourse from './pages/CreateCourse.jsx'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/courses" element={<Courses />} />
         <Route path="/course/:courseId" element={<CourseViewer />} />
         <Route path="/studio" element={<Studio />} />
+        <Route path="/studio/new" element={<CreateCourse />} />
         <Route path="/studio/course/:courseId" element={<StudioCourse />} />
         <Route path="/studio/course/:courseId/analytics" element={<Analytics />} />
         <Route path="/teach" element={<Studio />} />

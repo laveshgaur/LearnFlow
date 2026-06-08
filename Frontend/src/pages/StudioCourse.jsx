@@ -7,6 +7,10 @@ import {
   getVideos
 } from '../api/modules.js'
 import { uploadVideo, deleteVideo } from '../api/client.js'
+import {
+  getQuizForModule, createQuiz, deleteQuiz,
+  addQuestion, updateQuestion, deleteQuestion, getQuizResults
+} from '../api/quiz.js'
 
 export default function StudioCourse() {
   const { courseId } = useParams()
@@ -42,6 +46,19 @@ export default function StudioCourse() {
 
   // Expanded chapters
   const [expandedChapters, setExpandedChapters] = useState(new Set())
+
+  // Quiz management
+  const [quizData, setQuizData] = useState(null) // current module's quiz
+  const [quizLoading, setQuizLoading] = useState(false)
+  const [newQuizTitle, setNewQuizTitle] = useState('Module Test')
+  const [newQuizPassScore, setNewQuizPassScore] = useState(70)
+  // Question form
+  const [qText, setQText] = useState('')
+  const [qOptions, setQOptions] = useState(['', '', '', ''])
+  const [qCorrect, setQCorrect] = useState(0)
+  // Test results
+  const [showResults, setShowResults] = useState(false)
+  const [resultsData, setResultsData] = useState(null)
 
   function showSuccess(msg) {
     setSuccessMsg(msg)
@@ -95,6 +112,19 @@ export default function StudioCourse() {
   function handleSelectModule(mod) {
     setActiveModule(mod)
     loadChapters(mod.moduleId)
+    loadQuiz(mod.moduleId)
+    setShowResults(false)
+    setResultsData(null)
+  }
+
+  async function loadQuiz(moduleId) {
+    setQuizLoading(true)
+    setQuizData(null)
+    try {
+      const data = await getQuizForModule(moduleId, credentials.token)
+      if (data && data.hasQuiz) setQuizData(data)
+    } catch { /* no quiz yet */ }
+    finally { setQuizLoading(false) }
   }
 
   async function handleAddModule(e) {
@@ -116,7 +146,8 @@ export default function StudioCourse() {
       showSuccess('Module created successfully!')
       loadModules()
     } catch (e) {
-      setError(e.message || 'Error creating module')
+      const msg = e?.error || e?.message || 'Error creating module'
+      setError(typeof msg === 'object' ? JSON.stringify(msg) : msg)
     }
   }
 
@@ -592,18 +623,13 @@ export default function StudioCourse() {
             <form className="form-grid" onSubmit={handleSaveChapter}>
               <div>
                 <label className="label">Chapter Name</label>
-                <input
-                  className="input"
-                  required
-                  value={editingChapter.chapterName}
+                <input className="input" required value={editingChapter.chapterName}
                   onChange={(e) => setEditingChapter(prev => ({ ...prev, chapterName: e.target.value }))}
                 />
               </div>
               <div>
                 <label className="label">Content</label>
-                <textarea
-                  className="textarea"
-                  value={editingChapter.chapterDescription}
+                <textarea className="textarea" value={editingChapter.chapterDescription}
                   onChange={(e) => setEditingChapter(prev => ({ ...prev, chapterDescription: e.target.value }))}
                 />
               </div>
@@ -611,12 +637,184 @@ export default function StudioCourse() {
                 <button type="submit" className="btn btn-primary" disabled={editChapterBusy}>
                   {editChapterBusy ? 'Saving…' : 'Save Changes'}
                 </button>
-                <button type="button" className="btn btn-ghost" onClick={() => setEditingChapter(null)}>
-                  Cancel
-                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => setEditingChapter(null)}>Cancel</button>
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* ─── Quiz Builder Section ─── */}
+      {activeModule && (
+        <div className="card" style={{ marginTop: '1.5rem' }}>
+          <div className="panel-head">
+            <h2>📝 Module Test</h2>
+            {quizData && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={async () => {
+                setShowResults(true)
+                try {
+                  const r = await getQuizResults(quizData.quizId, credentials.token)
+                  setResultsData(r)
+                } catch (e) { setError(e.message || 'Failed to load results') }
+              }}>📊 View Results</button>
+            )}
+          </div>
+
+          {quizLoading ? (
+            <div className="skeleton" style={{ height: 60 }} />
+          ) : !quizData ? (
+            <div>
+              <p className="muted" style={{ marginBottom: '1rem' }}>No test added to this module yet.</p>
+              <div className="form-grid">
+                <div className="form-grid-2">
+                  <div>
+                    <label className="label">Test Title</label>
+                    <input className="input" value={newQuizTitle} onChange={e => setNewQuizTitle(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="label">Passing Score (%)</label>
+                    <input className="input" type="number" min="0" max="100" value={newQuizPassScore}
+                      onChange={e => setNewQuizPassScore(Number(e.target.value))} />
+                  </div>
+                </div>
+                <button type="button" className="btn btn-primary btn-sm" onClick={async () => {
+                  try {
+                    await createQuiz(activeModule.moduleId, credentials.token, {
+                      title: newQuizTitle, passingScore: newQuizPassScore
+                    })
+                    showSuccess('Quiz created!')
+                    loadQuiz(activeModule.moduleId)
+                  } catch (e) { setError(e.message || 'Error creating quiz') }
+                }}>+ Create Test</button>
+              </div>
+            </div>
+          ) : showResults && resultsData ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0 }}>Student Results — {resultsData.quizTitle}</h3>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowResults(false)}>← Back to Questions</button>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                <div className="analytics-tile" style={{ flex: 1, minWidth: '120px' }}>
+                  <div className="analytics-tile-body">
+                    <p className="analytics-value" style={{ fontSize: '1.4rem' }}>{resultsData.totalAttempts}</p>
+                    <p className="analytics-label">Total Attempts</p>
+                  </div>
+                </div>
+                <div className="analytics-tile" style={{ flex: 1, minWidth: '120px' }}>
+                  <div className="analytics-tile-body">
+                    <p className="analytics-value" style={{ fontSize: '1.4rem', color: 'var(--emerald)' }}>{resultsData.passedCount}</p>
+                    <p className="analytics-label">Passed</p>
+                  </div>
+                </div>
+                <div className="analytics-tile" style={{ flex: 1, minWidth: '120px' }}>
+                  <div className="analytics-tile-body">
+                    <p className="analytics-value" style={{ fontSize: '1.4rem' }}>{resultsData.passingScore}%</p>
+                    <p className="analytics-label">Pass Threshold</p>
+                  </div>
+                </div>
+              </div>
+              {resultsData.results?.length > 0 ? (
+                <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>Student</th><th>Score</th><th>Correct</th><th>Status</th><th>Date</th></tr></thead>
+                    <tbody>
+                      {resultsData.results.map(r => (
+                        <tr key={r.attemptId}>
+                          <td>{r.studentName}</td>
+                          <td><strong>{r.score}%</strong></td>
+                          <td>{r.correctAnswers}/{r.totalQuestions}</td>
+                          <td><span className={`tag ${r.passed ? 'tag-pass' : 'tag-fail'}`}>{r.passed ? 'PASSED' : 'FAILED'}</span></td>
+                          <td className="muted" style={{ fontSize: '0.78rem' }}>{r.attemptedAt ? new Date(r.attemptedAt).toLocaleDateString() : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="muted">No attempts yet.</p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div>
+                  <strong>{quizData.title}</strong>
+                  <span className="muted" style={{ marginLeft: '0.75rem', fontSize: '0.82rem' }}>Pass: {quizData.passingScore}%</span>
+                </div>
+                <button type="button" className="btn btn-ghost btn-sm danger-text" onClick={async () => {
+                  if (!window.confirm('Delete this quiz and all questions?')) return
+                  try { await deleteQuiz(quizData.quizId, credentials.token); showSuccess('Quiz deleted'); setQuizData(null) }
+                  catch (e) { setError(e.message || 'Error deleting quiz') }
+                }}>🗑️ Delete Quiz</button>
+              </div>
+
+              {/* Questions list */}
+              <h4 style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                Questions ({quizData.questions?.length || 0})
+              </h4>
+              {quizData.questions?.map((q, i) => (
+                <div key={q.questionId} className="studio-chapter-card" style={{ marginBottom: '0.5rem' }}>
+                  <div style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                    <span className="muted" style={{ fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>{i + 1}.</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, fontSize: '0.88rem', wordBreak: 'break-word' }}>{q.questionText}</p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.4rem' }}>
+                        {q.options?.map((opt, j) => (
+                          <span key={j} className={`tag ${j === q.correctOptionIndex ? 'tag-pass' : 'tag-outline'}`} style={{ fontSize: '0.72rem' }}>
+                            {opt}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <button type="button" className="btn btn-ghost btn-sm danger-text" style={{ flexShrink: 0 }}
+                      onClick={async () => {
+                        try { await deleteQuestion(quizData.quizId, q.questionId, credentials.token); showSuccess('Question deleted'); loadQuiz(activeModule.moduleId) }
+                        catch (e) { setError(e.message || 'Error deleting question') }
+                      }}>🗑️</button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Add question form */}
+              <div className="studio-add-section">
+                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Add Question</h4>
+                <div className="form-grid">
+                  <div>
+                    <label className="label">Question Text *</label>
+                    <input className="input" value={qText} onChange={e => setQText(e.target.value)}
+                      placeholder="e.g., What is React?" />
+                  </div>
+                  {qOptions.map((opt, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                        <input type="radio" name="correct-opt" checked={qCorrect === i}
+                          onChange={() => setQCorrect(i)} />
+                        <span className="muted" style={{ fontSize: '0.75rem' }}>Correct</span>
+                      </label>
+                      <input className="input" style={{ flex: 1 }} value={opt}
+                        onChange={e => { const n = [...qOptions]; n[i] = e.target.value; setQOptions(n) }}
+                        placeholder={`Option ${String.fromCharCode(65 + i)}`} />
+                    </div>
+                  ))}
+                  <button type="button" className="btn btn-primary btn-sm" disabled={!qText.trim() || qOptions.some(o => !o.trim())}
+                    onClick={async () => {
+                      try {
+                        await addQuestion(quizData.quizId, credentials.token, {
+                          questionText: qText.trim(),
+                          options: qOptions.map(o => o.trim()).join('|'),
+                          correctOptionIndex: qCorrect,
+                          questionOrder: (quizData.questions?.length || 0) + 1
+                        })
+                        setQText(''); setQOptions(['', '', '', '']); setQCorrect(0)
+                        showSuccess('Question added!')
+                        loadQuiz(activeModule.moduleId)
+                      } catch (e) { setError(e.message || 'Error adding question') }
+                    }}>+ Add Question</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

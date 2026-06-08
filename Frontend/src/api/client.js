@@ -173,6 +173,43 @@ export async function uploadVideo(token, chapterId, title, file, onProgress) {
   })
 }
 
+/**
+ * Upload a course cover image to Cloudinary via backend.
+ * @param {string} token - JWT auth token
+ * @param {File} file - image file
+ * @param {function} [onProgress] - optional (percent) => void
+ * @returns {{ url: string }} the uploaded image URL
+ */
+export async function uploadCoverImage(token, file, onProgress) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', joinUrl('/instructor/upload-cover'))
+    xhr.setRequestHeader('Authorization', bearerHeader(token))
+
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100))
+        }
+      }
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)) }
+        catch { resolve({ url: xhr.responseText }) }
+      } else {
+        reject(new Error(`Upload failed (${xhr.status})`))
+      }
+    }
+    xhr.onerror = () => reject(new Error('Network error during cover upload'))
+    xhr.send(formData)
+  })
+}
+
 export async function deleteVideo(token, videoId) {
   return apiFetch(`/instructor/delete-video/${videoId}`, { method: 'DELETE', token })
 }

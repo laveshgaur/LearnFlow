@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import VideoPlayer from '../components/VideoPlayer.jsx'
 import { getModules, getChapters, getVideos } from '../api/modules.js'
 import { getCourseProgress, updateVideoProgress, getVideoProgress } from '../api/progress.js'
+import { getStudentQuiz, submitQuiz, getQuizStatus } from '../api/quiz.js'
 
 const MAX_TITLE_LEN = 60
 
@@ -12,32 +13,10 @@ function VideoTitle({ title }) {
   const isLong = title.length > MAX_TITLE_LEN
   const display = isLong && !expanded ? title.slice(0, MAX_TITLE_LEN).trimEnd() + '…' : title
   return (
-    <p style={{
-      margin: '0.5rem 0 0',
-      fontSize: '0.875rem',
-      fontWeight: 600,
-      color: 'var(--text-muted)',
-      wordBreak: 'break-word',
-      overflowWrap: 'anywhere',
-      lineHeight: 1.4,
-    }}>
+    <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.4 }}>
       {display}
       {isLong && (
-        <button
-          type="button"
-          onClick={() => setExpanded(e => !e)}
-          style={{
-            marginLeft: '0.35rem',
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            color: 'var(--indigo-light)',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
+        <button type="button" onClick={() => setExpanded(e => !e)} style={{ marginLeft: '0.35rem', background: 'none', border: 'none', padding: 0, color: 'var(--indigo-light)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
           {expanded ? 'Show less' : 'Show more'}
         </button>
       )}
@@ -56,34 +35,46 @@ export default function CourseViewer() {
   const [videos, setVideos] = useState([])
   const [error, setError] = useState('')
 
-  // Progress tracking
+  // Progress
   const [completedChapterIds, setCompletedChapterIds] = useState(new Set())
-  // Per-video watch progress: { [videoId]: watchPercent }
   const [videoWatchState, setVideoWatchState] = useState({})
-
-  // Per-module chapter cache: { [moduleId]: Chapter[] }
   const [moduleChapters, setModuleChapters] = useState({})
-
-  // Mobile view: 'syllabus' | 'content'
   const [mobileView, setMobileView] = useState('syllabus')
 
-  // Chapter time-spent tracker
+  // Quiz status per module: { [moduleId]: { hasQuiz, passed, quizId, bestScore } }
+  const [quizStatuses, setQuizStatuses] = useState({})
+
+  // Active quiz state
+  const [showQuiz, setShowQuiz] = useState(false)
+  const [quizData, setQuizData] = useState(null)
+  const [quizAnswers, setQuizAnswers] = useState([])
+  const [quizSubmitting, setQuizSubmitting] = useState(false)
+  const [quizResult, setQuizResult] = useState(null)
+
   const chapterEntryTime = useRef(null)
   const lastHeartbeat = useRef(null)
 
-  // Load progress
+  // Load progress (new response shape: { chapters, quizStatuses })
   const loadProgress = useCallback(async () => {
     if (!credentials) return
     try {
       const data = await getCourseProgress(courseId, credentials.token)
       const ids = new Set()
-      if (Array.isArray(data)) {
-        data.forEach(p => { if (p.completed) ids.add(p.chapterId) })
+      const chapters = data?.chapters || data // backward compat
+      if (Array.isArray(chapters)) {
+        chapters.forEach(p => { if (p.completed) ids.add(p.chapterId) })
       }
       setCompletedChapterIds(ids)
-    } catch {
-      // Progress may not exist yet
-    }
+
+      // Quiz statuses
+      if (Array.isArray(data?.quizStatuses)) {
+        const qs = {}
+        data.quizStatuses.forEach(q => {
+          qs[q.moduleId] = { hasQuiz: true, passed: q.passed, quizId: q.quizId }
+        })
+        setQuizStatuses(qs)
+      }
+    } catch { /* ignore */ }
   }, [courseId, credentials])
 
   const loadModules = useCallback(async () => {
@@ -93,8 +84,6 @@ export default function CourseViewer() {
       const res = await getModules(courseId, credentials.token)
       const mods = Array.isArray(res) ? res : []
       setModules(mods)
-
-      // Auto-select first module and load its chapters
       if (mods.length > 0) {
         const firstMod = mods[0]
         setActiveModule(firstMod)
@@ -103,8 +92,6 @@ export default function CourseViewer() {
           const chList = Array.isArray(chs) ? chs : []
           setChapters(chList)
           setModuleChapters(prev => ({ ...prev, [firstMod.moduleId]: chList }))
-
-          // Auto-select first chapter
           if (chList.length > 0) {
             const firstCh = chList[0]
             setActiveChapter(firstCh)
@@ -113,7 +100,6 @@ export default function CourseViewer() {
             try {
               const vids = await getVideos(courseId, firstMod.moduleId, firstCh.chapterId, credentials.token)
               setVideos(Array.isArray(vids) ? vids : [])
-              // Load existing video progress
               loadVideoProgress(firstCh.chapterId)
             } catch { setVideos([]) }
           }
@@ -126,7 +112,6 @@ export default function CourseViewer() {
     }
   }, [courseId, credentials])
 
-  // Load existing per-video progress for a chapter
   async function loadVideoProgress(chapterId) {
     if (!credentials) return
     try {
@@ -146,14 +131,18 @@ export default function CourseViewer() {
     }
   }, [isAuthenticated, credentials, loadModules, loadProgress])
 
-  // Check if a module is fully completed (all chapters done)
+  // ── Module completion: all chapters done + quiz passed ──
   function isModuleCompleted(moduleId) {
     const chs = moduleChapters[moduleId]
     if (!chs || chs.length === 0) return false
-    return chs.every(ch => completedChapterIds.has(ch.chapterId))
+    const allChapsDone = chs.every(ch => completedChapterIds.has(ch.chapterId))
+    if (!allChapsDone) return false
+    // Quiz check
+    const qs = quizStatuses[moduleId]
+    if (qs && qs.hasQuiz && !qs.passed) return false
+    return true
   }
 
-  // Check if a module is unlocked
   function isModuleUnlocked(moduleIndex) {
     if (moduleIndex === 0) return true
     const prevMod = modules[moduleIndex - 1]
@@ -166,21 +155,21 @@ export default function CourseViewer() {
     setActiveChapter(null)
     setVideos([])
     setVideoWatchState({})
+    setShowQuiz(false)
+    setQuizData(null)
+    setQuizResult(null)
 
     if (moduleChapters[mod.moduleId]) {
       setChapters(moduleChapters[mod.moduleId])
       return
     }
-
     setChapters([])
     try {
       const res = await getChapters(courseId, mod.moduleId, credentials.token)
       const chList = Array.isArray(res) ? res : []
       setChapters(chList)
       setModuleChapters(prev => ({ ...prev, [mod.moduleId]: chList }))
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
   }
 
   function handleChapterSelect(chap) {
@@ -188,104 +177,110 @@ export default function CourseViewer() {
     setVideos([])
     setVideoWatchState({})
     setMobileView('content')
+    setShowQuiz(false)
+    setQuizData(null)
+    setQuizResult(null)
     chapterEntryTime.current = Date.now()
     lastHeartbeat.current = Date.now()
-
     getVideos(courseId, activeModule.moduleId, chap.chapterId, credentials.token)
-      .then(res => {
-        setVideos(Array.isArray(res) ? res : [])
-        loadVideoProgress(chap.chapterId)
-      })
+      .then(res => { setVideos(Array.isArray(res) ? res : []); loadVideoProgress(chap.chapterId) })
       .catch(console.error)
   }
 
-  /**
-   * Called by VideoPlayer every ~5 seconds while a video is playing.
-   * Sends progress to backend which auto-completes the chapter when conditions are met.
-   */
   function handleVideoProgress({ videoId, watchPercent, currentTime, duration }) {
     if (!credentials || !activeChapter) return
-
-    // Update local state immediately for live UI
-    setVideoWatchState(prev => ({
-      ...prev,
-      [videoId]: Math.max(prev[videoId] || 0, watchPercent),
-    }))
-
-    // Calculate time spent delta since last heartbeat
+    setVideoWatchState(prev => ({ ...prev, [videoId]: Math.max(prev[videoId] || 0, watchPercent) }))
     const now = Date.now()
     const timeDelta = Math.round((now - (lastHeartbeat.current || now)) / 1000)
     lastHeartbeat.current = now
-
-    // Send to backend
     updateVideoProgress(videoId, credentials.token, {
-      watchPercent,
-      lastPosition: currentTime,
-      chapterId: activeChapter.chapterId,
-      timeSpentDelta: timeDelta,
+      watchPercent, lastPosition: currentTime, chapterId: activeChapter.chapterId, timeSpentDelta: timeDelta,
     }).then(res => {
       if (res && res.justCompleted) {
-        // Chapter just auto-completed!
         setCompletedChapterIds(prev => new Set([...prev, activeChapter.chapterId]))
       }
-    }).catch(() => { /* silent – will retry on next heartbeat */ })
+    }).catch(() => {})
   }
 
-  // Load chapters for all modules in background for progress checking
+  // Background load chapters for all modules
   useEffect(() => {
     if (!credentials || modules.length === 0) return
     modules.forEach(async (mod) => {
       if (moduleChapters[mod.moduleId]) return
       try {
         const chs = await getChapters(courseId, mod.moduleId, credentials.token)
-        const chList = Array.isArray(chs) ? chs : []
-        setModuleChapters(prev => ({ ...prev, [mod.moduleId]: chList }))
+        setModuleChapters(prev => ({ ...prev, [mod.moduleId]: Array.isArray(chs) ? chs : [] }))
       } catch { /* ignore */ }
     })
   }, [modules, credentials, courseId])
 
-  // Time-spent heartbeat for chapters with no videos
-  // Sends a periodic heartbeat so the backend can track time spent
-  useEffect(() => {
-    if (!activeChapter || !credentials) return
+  // ── Quiz handlers ──
+  async function handleOpenQuiz() {
+    if (!activeModule || !credentials) return
+    setQuizResult(null)
+    try {
+      const data = await getStudentQuiz(activeModule.moduleId, credentials.token)
+      if (!data.hasQuiz) { setError('No quiz available for this module'); return }
+      setQuizData(data)
+      setQuizAnswers(new Array(data.questions?.length || 0).fill(-1))
+      setShowQuiz(true)
+      setActiveChapter(null)
+      setMobileView('content')
+    } catch (e) { setError(e.message || 'Failed to load quiz') }
+  }
 
-    const timer = setInterval(() => {
-      if (!activeChapter || completedChapterIds.has(activeChapter.chapterId)) return
-
-      // For chapters with no videos, create a dummy heartbeat
-      // by sending a "video 0" progress with just time delta
-      const now = Date.now()
-      const timeDelta = Math.round((now - (lastHeartbeat.current || now)) / 1000)
-      lastHeartbeat.current = now
-
-      if (timeDelta > 0 && videos.length === 0) {
-        // No videos — use the chapter-time heartbeat path
-        // We'll piggyback on the video endpoint with videoId=0
-        // Actually, for no-video chapters we need a separate approach:
-        // send to any video endpoint — but there are no videos.
-        // Instead, let's just keep counting locally.
-        // The chapter will auto-complete when a video progress call is made.
+  async function handleSubmitQuiz() {
+    if (!quizData || quizSubmitting) return
+    setQuizSubmitting(true)
+    try {
+      const result = await submitQuiz(quizData.quizId, credentials.token, quizAnswers)
+      setQuizResult(result)
+      if (result.passed) {
+        // Update quiz status locally
+        setQuizStatuses(prev => ({
+          ...prev,
+          [activeModule.moduleId]: { hasQuiz: true, passed: true, quizId: quizData.quizId }
+        }))
       }
-    }, 10000)
-
-    return () => clearInterval(timer)
-  }, [activeChapter, credentials, videos.length])
+    } catch (e) { setError(e.message || 'Failed to submit quiz') }
+    finally { setQuizSubmitting(false) }
+  }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
 
-  // ── Compute overall chapter video completion for the current chapter ──
-  const allVideosWatched = videos.length > 0 && videos.every(
-    vid => (videoWatchState[vid.videoId] || 0) >= 90
-  )
+  // ── Course completion % ──
+  const allChapterIds = Object.values(moduleChapters).flat().map(ch => ch.chapterId)
+  const courseCompletionPercent = allChapterIds.length > 0
+    ? Math.round(allChapterIds.filter(id => completedChapterIds.has(id)).length / allChapterIds.length * 100)
+    : 0
+
+  // Current chapter video stats
   const chapterVideoPercent = videos.length > 0
     ? Math.round(videos.reduce((sum, vid) => sum + Math.min(100, videoWatchState[vid.videoId] || 0), 0) / videos.length)
     : 0
-
+  const allVideosWatched = videos.length > 0 && videos.every(vid => (videoWatchState[vid.videoId] || 0) >= 90)
   const isCurrentChapterComplete = activeChapter && completedChapterIds.has(activeChapter.chapterId)
+
+  // Check if current module's chapters are all done (for showing quiz)
+  const currentModuleChapsDone = activeModule
+    && (moduleChapters[activeModule.moduleId] || []).length > 0
+    && (moduleChapters[activeModule.moduleId] || []).every(ch => completedChapterIds.has(ch.chapterId))
+
+  const currentModuleQuiz = activeModule ? quizStatuses[activeModule.moduleId] : null
+  const showQuizButton = currentModuleChapsDone && currentModuleQuiz?.hasQuiz && !currentModuleQuiz?.passed
 
   const syllabus = (
     <nav className="card cv-nav">
-      <h2>Syllabus</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+        <h2 style={{ margin: 0 }}>Syllabus</h2>
+        <span className="tag tag-outline" style={{ fontSize: '0.65rem' }}>{courseCompletionPercent}% complete</span>
+      </div>
+      {/* Course progress bar */}
+      <div className="cv-chapter-progress" style={{ marginBottom: '1rem' }}>
+        <div className="cv-chapter-progress-bar">
+          <div className="cv-chapter-progress-fill" style={{ width: `${courseCompletionPercent}%` }} />
+        </div>
+      </div>
       {loading ? (
         <p className="muted">Loading...</p>
       ) : (
@@ -295,6 +290,7 @@ export default function CourseViewer() {
             const completed = isModuleCompleted(mod.moduleId)
             const modChaps = moduleChapters[mod.moduleId] || []
             const completedCount = modChaps.filter(ch => completedChapterIds.has(ch.chapterId)).length
+            const qs = quizStatuses[mod.moduleId]
 
             return (
               <li key={mod.moduleId}>
@@ -302,12 +298,7 @@ export default function CourseViewer() {
                   className={`btn btn-block ${activeModule?.moduleId === mod.moduleId ? 'btn-primary' : 'btn-ghost'}`}
                   onClick={() => loadChaptersForModule(mod, idx)}
                   disabled={!unlocked}
-                  style={{
-                    opacity: unlocked ? 1 : 0.45,
-                    position: 'relative',
-                    textAlign: 'left',
-                    justifyContent: 'flex-start',
-                  }}
+                  style={{ opacity: unlocked ? 1 : 0.45, textAlign: 'left', justifyContent: 'flex-start' }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
                     {completed ? (
@@ -332,7 +323,7 @@ export default function CourseViewer() {
                       return (
                         <li key={chap.chapterId} style={{ marginTop: '0.5rem' }}>
                           <button
-                            className={`btn btn-block btn-sm ${activeChapter?.chapterId === chap.chapterId ? 'btn-secondary' : 'btn-ghost'}`}
+                            className={`btn btn-block btn-sm ${activeChapter?.chapterId === chap.chapterId && !showQuiz ? 'btn-secondary' : 'btn-ghost'}`}
                             onClick={() => handleChapterSelect(chap)}
                             style={{ textAlign: 'left', justifyContent: 'flex-start' }}
                           >
@@ -340,10 +331,7 @@ export default function CourseViewer() {
                               {isDone ? (
                                 <span style={{ color: 'var(--emerald)', fontSize: '0.9rem', flexShrink: 0 }}>✓</span>
                               ) : (
-                                <span style={{
-                                  width: '14px', height: '14px', borderRadius: '50%',
-                                  border: '2px solid var(--border-strong)', flexShrink: 0,
-                                }} />
+                                <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid var(--border-strong)', flexShrink: 0 }} />
                               )}
                               <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {chap.chapterName}
@@ -353,6 +341,27 @@ export default function CourseViewer() {
                         </li>
                       )
                     })}
+                    {/* Quiz button in syllabus */}
+                    {qs?.hasQuiz && (
+                      <li style={{ marginTop: '0.75rem' }}>
+                        <button
+                          className={`btn btn-block btn-sm ${showQuiz ? 'btn-secondary' : qs.passed ? 'btn-ghost' : 'btn-primary'}`}
+                          onClick={handleOpenQuiz}
+                          disabled={!currentModuleChapsDone}
+                          style={{ opacity: currentModuleChapsDone ? 1 : 0.45, textAlign: 'left', justifyContent: 'flex-start' }}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%' }}>
+                            {qs.passed ? (
+                              <span style={{ color: 'var(--emerald)', fontSize: '0.9rem', flexShrink: 0 }}>✓</span>
+                            ) : (
+                              <span style={{ fontSize: '0.85rem', flexShrink: 0 }}>📝</span>
+                            )}
+                            <span>Module Test</span>
+                            {qs.passed && <span className="tag tag-outline" style={{ fontSize: '0.6rem', marginLeft: 'auto' }}>Passed</span>}
+                          </span>
+                        </button>
+                      </li>
+                    )}
                   </ul>
                 )}
               </li>
@@ -363,7 +372,89 @@ export default function CourseViewer() {
     </nav>
   )
 
-  const content = (
+  // ── Quiz Content ──
+  const quizContent = showQuiz && quizData ? (
+    <main className="card cv-main" style={{ minHeight: '400px' }}>
+      {quizResult ? (
+        <div>
+          <h2 style={{ marginBottom: '1rem' }}>
+            {quizResult.passed ? '🎉 Congratulations!' : '📝 Quiz Results'}
+          </h2>
+          <div className={`quiz-result-card ${quizResult.passed ? 'quiz-result-passed' : 'quiz-result-failed'}`}>
+            <div className="quiz-result-score">{quizResult.score}%</div>
+            <div className="quiz-result-meta">
+              {quizResult.correctAnswers}/{quizResult.totalQuestions} correct · Passing: {quizResult.passingScore}%
+            </div>
+            <div className={`quiz-result-badge ${quizResult.passed ? 'badge-pass' : 'badge-fail'}`}>
+              {quizResult.passed ? '✓ PASSED' : '✗ NOT PASSED'}
+            </div>
+          </div>
+
+          {/* Review answers */}
+          <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Review</h3>
+          {quizResult.review?.map((q, i) => (
+            <div key={q.questionId} className={`quiz-review-item ${q.isCorrect ? 'quiz-review-correct' : 'quiz-review-wrong'}`}>
+              <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{i + 1}. {q.questionText}</p>
+              <div className="quiz-options-grid">
+                {q.options?.map((opt, j) => (
+                  <div key={j} className={`quiz-option ${j === q.correctOptionIndex ? 'quiz-option-correct' : ''} ${j === q.userAnswer && !q.isCorrect ? 'quiz-option-wrong' : ''}`}>
+                    {opt}
+                    {j === q.correctOptionIndex && <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>✓ Correct</span>}
+                    {j === q.userAnswer && j !== q.correctOptionIndex && <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>✗ Your answer</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {!quizResult.passed && (
+            <button type="button" className="btn btn-primary" style={{ marginTop: '1.5rem' }}
+              onClick={() => { setQuizResult(null); setQuizAnswers(new Array(quizData.questions?.length || 0).fill(-1)) }}>
+              Retry Quiz
+            </button>
+          )}
+        </div>
+      ) : (
+        <div>
+          <h2 style={{ marginBottom: '0.5rem' }}>{quizData.title || 'Module Test'}</h2>
+          {quizData.description && <p className="muted" style={{ marginBottom: '1.5rem' }}>{quizData.description}</p>}
+          <p className="muted" style={{ marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+            Passing score: <strong>{quizData.passingScore}%</strong>
+            {quizData.timeLimitMinutes > 0 && <> · Time limit: <strong>{quizData.timeLimitMinutes} min</strong></>}
+            {quizData.passed && <span className="cv-complete-badge" style={{ marginLeft: '0.75rem' }}>✓ Already Passed</span>}
+          </p>
+
+          {quizData.questions?.map((q, i) => (
+            <div key={q.questionId} className="quiz-question-card">
+              <p style={{ fontWeight: 600, marginBottom: '0.75rem' }}>{i + 1}. {q.questionText}</p>
+              <div className="quiz-options-grid">
+                {q.options?.map((opt, j) => (
+                  <label key={j} className={`quiz-option quiz-option-selectable ${quizAnswers[i] === j ? 'quiz-option-selected' : ''}`}>
+                    <input type="radio" name={`q-${i}`} checked={quizAnswers[i] === j}
+                      onChange={() => setQuizAnswers(prev => { const n = [...prev]; n[i] = j; return n })}
+                      style={{ display: 'none' }}
+                    />
+                    <span className="quiz-radio">{quizAnswers[i] === j ? '●' : '○'}</span>
+                    {opt}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <button type="button" className="btn btn-primary" style={{ marginTop: '1.5rem' }}
+            onClick={handleSubmitQuiz} disabled={quizSubmitting || quizAnswers.some(a => a === -1)}>
+            {quizSubmitting ? 'Submitting…' : 'Submit Quiz'}
+          </button>
+          {quizAnswers.some(a => a === -1) && (
+            <p className="muted" style={{ fontSize: '0.78rem', marginTop: '0.5rem' }}>Answer all questions to submit</p>
+          )}
+        </div>
+      )}
+    </main>
+  ) : null
+
+  const content = showQuiz ? quizContent : (
     <main className="card cv-main" style={{ minHeight: '400px' }}>
       {!activeModule ? (
         <div className="empty-state">
@@ -375,13 +466,16 @@ export default function CourseViewer() {
           <div className="empty-icon">📖</div>
           <h2>{activeModule.moduleName}</h2>
           <p className="muted">Select a chapter from the syllabus.</p>
+          {showQuizButton && (
+            <button type="button" className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={handleOpenQuiz}>
+              📝 Take Module Test
+            </button>
+          )}
         </div>
       ) : (
         <article>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #3d3b45', paddingBottom: '1rem', marginBottom: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0 }}>
-              {activeChapter.chapterName}
-            </h2>
+            <h2 style={{ margin: 0 }}>{activeChapter.chapterName}</h2>
             {isCurrentChapterComplete && (
               <span className="cv-complete-badge" style={{ animation: 'none' }}>
                 <span style={{ fontSize: '0.9rem' }}>✓</span>
@@ -399,36 +493,22 @@ export default function CourseViewer() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <h3 style={{ margin: 0 }}>Videos</h3>
                 {!isCurrentChapterComplete && (
-                  <span className="tag tag-outline" style={{ fontSize: '0.65rem' }}>
-                    {chapterVideoPercent}% overall
-                  </span>
+                  <span className="tag tag-outline" style={{ fontSize: '0.65rem' }}>{chapterVideoPercent}% overall</span>
                 )}
               </div>
-
-              {/* Overall chapter video progress bar */}
               {!isCurrentChapterComplete && (
                 <div className="cv-chapter-progress">
                   <div className="cv-chapter-progress-bar">
-                    <div
-                      className="cv-chapter-progress-fill"
-                      style={{ width: `${chapterVideoPercent}%` }}
-                    />
+                    <div className="cv-chapter-progress-fill" style={{ width: `${chapterVideoPercent}%` }} />
                   </div>
                   <span className="muted" style={{ fontSize: '0.72rem' }}>
-                    {allVideosWatched
-                      ? 'All videos watched — completing soon…'
-                      : `Watch all videos to complete this chapter`}
+                    {allVideosWatched ? 'All videos watched — completing soon…' : 'Watch all videos to complete this chapter'}
                   </span>
                 </div>
               )}
-
               {videos.map(vid => (
                 <div key={vid.id || vid.videoId} style={{ marginTop: '1.25rem' }}>
-                  <VideoPlayer
-                    src={vid.videoUrl}
-                    videoId={vid.videoId}
-                    onProgress={handleVideoProgress}
-                  />
+                  <VideoPlayer src={vid.videoUrl} videoId={vid.videoId} onProgress={handleVideoProgress} />
                   <VideoTitle title={vid.videoTitle} />
                 </div>
               ))}
@@ -448,36 +528,14 @@ export default function CourseViewer() {
         <h1>Viewing Course {courseId}</h1>
       </header>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && <div className="alert alert-error" style={{ cursor: 'pointer' }} onClick={() => setError('')}>{error}</div>}
 
-      {/* ── Mobile tab bar ── */}
       <div className="cv-tabs">
-        <button
-          type="button"
-          className={`cv-tab ${mobileView === 'syllabus' ? 'cv-tab-active' : ''}`}
-          onClick={() => setMobileView('syllabus')}
-        >
-          📚 Syllabus
-        </button>
-        <button
-          type="button"
-          className={`cv-tab ${mobileView === 'content' ? 'cv-tab-active' : ''}`}
-          onClick={() => setMobileView('content')}
-        >
-          📖 {activeChapter ? activeChapter.chapterName : 'Content'}
-        </button>
+        <button type="button" className={`cv-tab ${mobileView === 'syllabus' ? 'cv-tab-active' : ''}`} onClick={() => setMobileView('syllabus')}>📚 Syllabus</button>
+        <button type="button" className={`cv-tab ${mobileView === 'content' ? 'cv-tab-active' : ''}`} onClick={() => setMobileView('content')}>📖 {showQuiz ? 'Quiz' : activeChapter ? activeChapter.chapterName : 'Content'}</button>
       </div>
-
-      {/* ── Mobile: show one panel at a time ── */}
-      <div className="cv-mobile-view">
-        {mobileView === 'syllabus' ? syllabus : content}
-      </div>
-
-      {/* ── Desktop: two-column grid (both panels always visible) ── */}
-      <div className="cv-body">
-        {syllabus}
-        {content}
-      </div>
+      <div className="cv-mobile-view">{mobileView === 'syllabus' ? syllabus : content}</div>
+      <div className="cv-body">{syllabus}{content}</div>
     </div>
   )
 }
