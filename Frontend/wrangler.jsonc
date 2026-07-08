@@ -1,0 +1,7 @@
+{
+    "name": "learnflow",
+    "compatibility_date": "2026-07-08",
+    "assets": {
+        "directory": "./dist"
+    }
+}
