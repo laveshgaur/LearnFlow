@@ -53,9 +53,17 @@
   - Native HLS support on Safari; `hls.js` polyfill on Chrome/Firefox/Edge
   - Desktop: fixed two-column layout (syllabus + content side-by-side)
   - Mobile: tab-based layout (📚 Syllabus / 📖 Content switch)
+- 📈 **Progress Tracking** — automatic chapter completion based on video watch progress
+  - Per-video watch percentage tracked in real time
+  - Chapters auto-complete when all videos are ≥90% watched **and** ≥30 seconds spent
+  - Resume playback from last-known position
+- 📝 **Module Quizzes** — take quizzes at the end of each module
+  - Multiple-choice questions with optional time limits
+  - Instant scoring with pass/fail result and answer review
+  - Best score tracking across multiple attempts
 
 ### For Instructors (INSTRUCTOR role)
-- ✏️ **Create** new courses with title, description, duration, price, cover image, and status
+- ✏️ **Create** new courses via a dedicated **Create Course** page with cover image upload
 - 📝 **Edit** existing courses
 - 🗑️ **Delete** courses they own
 - 🔄 Toggle course status between `DRAFT`, `PUBLISHED`, and `ARCHIVED`
@@ -64,6 +72,9 @@
 - 🎬 **Upload Videos** to chapters via **direct-to-Cloudinary signed upload** (with real-time progress bar)
 - 🔄 Backend automatically converts Cloudinary URLs to **HLS `.m3u8` streaming URLs** before saving
 - 🗑️ **Delete Videos** — removes both the Cloudinary file and the database record atomically
+- 📝 **Quiz Builder** — create module tests with multiple-choice questions, passing scores, and time limits
+- 📊 **Course Analytics** — view enrollment counts, content breakdown, and student completion rates
+- 📋 **Quiz Results** — view all student attempts, scores, and pass/fail statistics per quiz
 
 ### For Admins (ADMIN role)
 - 👥 View a **directory of all registered users** with roles and course counts
@@ -226,29 +237,43 @@ Navigate to **http://localhost:5173** and you're ready to go!
 │ age              │     │ course_duration   │     │ ...              │
 │ password_hash    │     │ course_price      │     │ course_id (FK)   │
 │ roles            │     │ course_status     │     └────────┬─────────┘
-│ created_at       │     │ user_id (FK)      │              │ 1
-└──────────────────┘     └──────────────────┘              │ N
-                                                   ┌────────┴─────────┐
-                                                   │     chapters     │
-                                                   ├──────────────────┤
-                                                   │ chapter_id (PK)  │
-                                                   │ chapter_name     │
-                                                   │ chapter_desc     │
-                                                   │ module_id (FK)   │
-                                                   └────────┬─────────┘
-                                                            │ 1
-                                                            │ N
-                                                   ┌────────┴─────────┐
-                                                   │      videos      │
-                                                   ├──────────────────┤
-                                                   │ video_id (PK)    │
-                                                   │ video_title      │
-                                                   │ video_url        │
-                                                   │ cloudinary_      │
-                                                   │   public_id      │
-                                                   │ duration_seconds │
-                                                   │ chapter_id (FK)  │
-                                                   └──────────────────┘
+│ created_at       │     │ user_id (FK)      │         1 │     │ 1
+└──────────────────┘     └──────────────────┘           │     │
+                                                    N │     │ 1
+                                              ┌────────┴──┐  ┌┴─────────────────┐
+                                              │ chapters  │  │     quizzes      │
+                                              ├───────────┤  ├──────────────────┤
+                                              │chapter_id │  │ quiz_id (PK)     │
+                                              │chapter_name│  │ quiz_title       │
+                                              │chapter_desc│  │ passing_score    │
+                                              │module_id  │  │ time_limit_mins  │
+                                              └─────┬─────┘  │ module_id (FK,UQ)│
+                                               1 │  │ 1      └────────┬─────────┘
+                                               N │  │ N          1 │  │ 1
+                                        ┌────────┴┐ ┌┴──────────┐  │  │
+                                        │ videos  │ │ chapter_  │  N │  N
+                                        ├─────────┤ │ progress  │ ┌──┴────────────┐
+                                        │video_id │ ├───────────┤ │quiz_questions │
+                                        │video_   │ │user_id(FK)│ ├──────────────┤
+                                        │ title   │ │chapter_id │ │question_id   │
+                                        │video_url│ │completed  │ │question_text │
+                                        │cloud_id │ │time_spent │ │options       │
+                                        │duration │ └───────────┘ │correct_index │
+                                        │chapter_ │               │quiz_id (FK)  │
+                                        │ id (FK) │               └──────────────┘
+                                        └────┬────┘
+                                          1  │
+                                          N  │           ┌──────────────────┐
+                                        ┌────┴────────┐  │  quiz_attempts   │
+                                        │video_       │  ├──────────────────┤
+                                        │ progress    │  │ attempt_id (PK)  │
+                                        ├─────────────┤  │ user_id (FK)     │
+                                        │user_id (FK) │  │ quiz_id (FK)     │
+                                        │video_id(FK) │  │ score            │
+                                        │watch_percent│  │ passed           │
+                                        │last_position│  │ answers_json     │
+                                        └─────────────┘  │ attempted_at     │
+                                                         └──────────────────┘
 ```
 
 ### Key Points
@@ -256,6 +281,9 @@ Navigate to **http://localhost:5173** and you're ready to go!
 - **Passwords** are stored as BCrypt hashes (never plaintext)
 - **Video URLs** store Cloudinary **HLS `.m3u8`** URLs (not raw MP4 links)
 - **`cloudinary_public_id`** is persisted for reliable deletion without URL parsing
+- **Each module** can have **one quiz** (one-to-one); each quiz has **many questions**
+- **Progress** is tracked per-user at both the **chapter level** (completion + time spent) and **video level** (watch percent + position)
+- **Quiz attempts** record score, pass/fail, and the user's answers as JSON
 - **Hibernate** manages DDL — tables created/updated automatically
 
 ---
@@ -292,52 +320,76 @@ LearnFlow/
 ├── Backend/                              # Spring Boot Application
 │   ├── pom.xml
 │   └── src/main/java/com/lms/
+│       ├── config/
+│       │   ├── AdminConfig.java              # Auto-creates default admin user
+│       │   ├── CloudinaryConfig.java          # Cloudinary SDK bean
+│       │   └── SpringSecurity.java            # Security filter chain + CORS
 │       ├── controller/
-│       │   ├── AdminController.java          # GET /admin — list all users
-│       │   ├── CourseController.java          # GET /courses — public catalog
-│       │   ├── InstructorController.java      # Course/video CRUD /instructor/**
-│       │   ├── ModuleController.java          # Module CRUD
-│       │   ├── ChapterController.java         # Chapter CRUD
-│       │   ├── VideoController.java           # GET videos by chapter
-│       │   ├── UserController.java            # Profile + purchase
-│       │   └── PublicController.java          # POST /create-user
-│       │   ├── dto/
-│       │   │   ├── request/                   # Request DTOs
-│       │   │   ├── response/                  # Response DTOs
-│       │   │   └── mapper/DtoMapper.java      # Entity to DTO mappers
-│       │   ├── filter/
-│       │   │   └── JwtFilter.java             # Intercepts and validates JWTs
-│       │   ├── utils/
-│       │   │   └── JwtUtil.java               # JWT generation and validation
-│       │   ├── model/
+│       │   ├── AdminController.java           # GET /admin — list all users
+│       │   ├── CourseController.java           # GET /courses — public catalog
+│       │   ├── InstructorController.java       # Course/video CRUD + analytics
+│       │   ├── ModuleController.java           # Module CRUD
+│       │   ├── ChapterController.java          # Chapter CRUD
+│       │   ├── VideoController.java            # GET videos by chapter
+│       │   ├── QuizController.java             # Quiz/question CRUD + student quiz
+│       │   ├── ProgressController.java         # Chapter/video progress tracking
+│       │   ├── UserController.java             # Profile + purchase
+│       │   ├── PublicController.java           # POST /sign-up, POST /login
+│       │   └── HealthCheck.java                # GET /health-check
+│       ├── dto/
+│       │   ├── request/                        # CourseRequest, VideoUploadRequest, etc.
+│       │   ├── response/                       # CourseResponse, UserResponse, etc.
+│       │   └── mapper/DtoMapper.java           # Entity → DTO mappers
+│       ├── filter/
+│       │   └── JwtFilter.java                  # Intercepts and validates JWTs
+│       ├── utils/
+│       │   └── JwtUtil.java                    # JWT generation and validation
+│       ├── model/
 │       │   ├── User.java
 │       │   ├── Course.java
 │       │   ├── Module.java
 │       │   ├── Chapter.java
-│       │   └── Video.java
+│       │   ├── Video.java
+│       │   ├── Quiz.java                       # One-to-one with Module
+│       │   ├── QuizQuestion.java               # MCQ questions (pipe-separated options)
+│       │   ├── QuizAttempt.java                # Student quiz submissions
+│       │   ├── ChapterProgress.java            # Per-user chapter completion
+│       │   └── VideoProgress.java              # Per-user video watch tracking
 │       ├── repository/
 │       │   ├── UserRepository.java
 │       │   ├── CourseRepository.java
 │       │   ├── ModuleRepository.java
 │       │   ├── ChapterRepository.java
-│       │   └── VideoRepository.java
+│       │   ├── VideoRepository.java
+│       │   ├── QuizRepository.java
+│       │   ├── QuizQuestionRepository.java
+│       │   ├── QuizAttemptRepository.java
+│       │   ├── ChapterProgressRepository.java
+│       │   └── VideoProgressRepository.java
 │       └── service/
 │           ├── UserService.java
+│           ├── UserDetailsServiceImpl.java
 │           ├── CourseService.java
 │           ├── ModuleService.java
 │           ├── ChapterService.java
 │           ├── VideoService.java
-│           └── FileUploadService.java         # Cloudinary upload & delete
+│           ├── FileUploadService.java          # Cloudinary upload, delete & HLS
+│           ├── QuizService.java                # Quiz CRUD, grading, attempts
+│           ├── ChapterProgressService.java     # Chapter completion tracking
+│           ├── VideoProgressService.java       # Video watch progress tracking
+│           └── ValidityChecker.java            # Input validation utilities
 │
 ├── Frontend/                             # React + Vite SPA
 │   └── src/
 │       ├── api/
-│       │   ├── client.js                 # Base fetch wrapper + instructor APIs
-│       │   └── modules.js               # Module/chapter/video API calls
+│       │   ├── client.js                  # Base fetch wrapper + instructor APIs
+│       │   ├── modules.js                # Module/chapter/video API calls
+│       │   ├── progress.js               # Progress tracking API calls
+│       │   └── quiz.js                   # Quiz CRUD + student quiz API calls
 │       ├── context/
 │       │   └── AuthContext.jsx
 │       ├── components/
-│       │   ├── VideoPlayer.jsx          # HLS player (hls.js + MP4 fallback)
+│       │   ├── VideoPlayer.jsx           # HLS player (hls.js + MP4 fallback)
 │       │   ├── Layout.jsx
 │       │   └── Layout.css
 │       └── pages/
@@ -346,11 +398,16 @@ LearnFlow/
 │           ├── Login.jsx
 │           ├── Register.jsx
 │           ├── Dashboard.jsx
-│           ├── Studio.jsx               # Instructor course list + CRUD
-│           ├── StudioCourse.jsx         # Module/chapter/video builder
-│           ├── CourseViewer.jsx         # Learner chapter + video viewer
-│           └── Admin.jsx                # Admin user directory + create user
+│           ├── Studio.jsx                # Instructor course list + CRUD
+│           ├── CreateCourse.jsx          # Dedicated course creation form
+│           ├── StudioCourse.jsx          # Module/chapter/video/quiz builder
+│           ├── Analytics.jsx             # Course analytics dashboard
+│           ├── CourseViewer.jsx          # Learner chapter + video + quiz viewer
+│           └── Admin.jsx                 # Admin user directory + create user
 │
+├── FUNCTIONAL_DOCUMENT.md
+├── HLD_LearnFlow.md
+├── LLD_LearnFlow.md
 └── README.md
 ```
 
@@ -362,8 +419,10 @@ LearnFlow/
 
 ```http
 GET  /health-check
-POST /create-user
+POST /sign-up
+POST /login
 GET  /courses
+GET  /courses/**
 ```
 
 ---
@@ -388,9 +447,12 @@ POST   /instructor/create-course
 PUT    /instructor/update-course/{courseId}
 DELETE /instructor/delete-course/{courseId}
 
-GET    /instructor/cloudinary-signature     # signed upload params (sig, apiKey, cloudName)
+GET    /instructor/cloudinary-signature     # signed upload params
+POST   /instructor/upload-cover             # cover image upload (multipart)
 POST   /instructor/save-video              # JSON: { chapterId, title, publicId, videoUrl }
 DELETE /instructor/delete-video/{videoId}  # deletes from Cloudinary + DB
+
+GET    /instructor/analytics/{courseId}     # course metrics & completion rates
 
 GET    /course/{courseId}/modules
 POST   /course/{courseId}/modules
@@ -400,6 +462,43 @@ DELETE /course/{courseId}/modules/{moduleId}
 GET    /courses/{courseId}/modules/{moduleId}/chapters
 POST   /courses/{courseId}/modules/{moduleId}/chapters
 DELETE /courses/{courseId}/modules/{moduleId}/chapters/{chapterId}
+```
+
+---
+
+### Quiz Endpoints (INSTRUCTOR role)
+
+```http
+GET    /instructor/quiz/module/{moduleId}           # get quiz for a module
+POST   /instructor/quiz/module/{moduleId}           # create quiz
+PUT    /instructor/quiz/{quizId}                    # update quiz settings
+DELETE /instructor/quiz/{quizId}                    # delete quiz
+
+POST   /instructor/quiz/{quizId}/questions          # add question
+PUT    /instructor/quiz/{quizId}/questions/{qId}    # update question
+DELETE /instructor/quiz/{quizId}/questions/{qId}    # delete question
+
+GET    /instructor/quiz/{quizId}/results            # view all student attempts
+```
+
+---
+
+### Quiz Endpoints (USER role)
+
+```http
+GET    /user/quiz/module/{moduleId}                 # get quiz (no correct answers)
+POST   /user/quiz/{quizId}/submit                   # submit answers, get score
+GET    /user/quiz/status/module/{moduleId}           # check if passed
+```
+
+---
+
+### Progress Tracking Endpoints (USER role)
+
+```http
+GET    /user/progress/course/{courseId}              # chapter progress + quiz statuses
+POST   /user/progress/video/{videoId}               # update video watch progress
+GET    /user/progress/videos/{chapterId}             # per-video watch data
 ```
 
 > **Video upload flow:**
@@ -465,12 +564,12 @@ POST /admin/create-user                    # Create user with explicit roles
 
 | URL Pattern                     | Access              | Description                          |
 | ------------------------------- | ------------------- | ------------------------------------ |
-| `POST /create-user`             | **Public**          | Open registration                    |
-| `GET /courses`                  | **Public**          | Public course catalog                |
-| `GET /health-check`             | **Authenticated**   | Any logged-in user                   |
-| `PUT /user`                     | **Authenticated**   | Get own profile                      |
-| `POST /user/**`                 | **Authenticated**   | Purchase courses                     |
-| `/instructor/**`                | **ROLE_INSTRUCTOR** | Full course + video CRUD             |
+| `POST /sign-up`                 | **Public**          | Open registration                    |
+| `POST /login`                   | **Public**          | Authentication                       |
+| `GET /health-check`             | **Public**          | Health check                         |
+| `GET /courses`, `/courses/**`   | **Public**          | Public course catalog                |
+| `/user/**`                      | **Authenticated**   | Profile, purchases, progress, quizzes|
+| `/instructor/**`                | **ROLE_INSTRUCTOR** | Course/video/quiz CRUD + analytics   |
 | `/admin/**`                     | **ROLE_ADMIN**      | View and create users                |
 
 ### Roles
@@ -484,17 +583,19 @@ POST /admin/create-user                    # Create user with explicit roles
 
 ## 🖥 Frontend Pages
 
-| Route                    | Page             | Auth | Role        | Description                                    |
-| ------------------------ | ---------------- | ---- | ----------- | ---------------------------------------------- |
-| `/`                      | `Home`           | No   | —           | Landing page                                   |
-| `/courses`               | `Courses`        | No   | —           | Public catalog + enrollment                    |
-| `/register`              | `Register`       | No   | —           | Registration form                              |
-| `/login`                 | `Login`          | No   | —           | Login form                                     |
-| `/dashboard`             | `Dashboard`      | Yes  | Any         | Profile + health check + enrolled courses      |
-| `/studio`                | `Studio`         | Yes  | INSTRUCTOR  | Course list + create / edit / delete           |
-| `/studio/course/:id`     | `StudioCourse`   | Yes  | INSTRUCTOR  | Module/chapter builder + video upload/delete   |
-| `/courses/:id/view`      | `CourseViewer`   | Yes  | Any         | Chapter viewer with video player               |
-| `/admin`                 | `Admin`          | Yes  | ADMIN       | User directory + create user form              |
+| Route                              | Page             | Auth | Role        | Description                                    |
+| ---------------------------------- | ---------------- | ---- | ----------- | ---------------------------------------------- |
+| `/`                                | `Home`           | No   | —           | Landing page                                   |
+| `/courses`                         | `Courses`        | No   | —           | Public catalog + enrollment                    |
+| `/register`                        | `Register`       | No   | —           | Registration form                              |
+| `/login`                           | `Login`          | No   | —           | Login form                                     |
+| `/dashboard`                       | `Dashboard`      | Yes  | Any         | Profile + health check + enrolled courses      |
+| `/studio`                          | `Studio`         | Yes  | INSTRUCTOR  | Course list + edit / delete                    |
+| `/studio/new`                      | `CreateCourse`   | Yes  | INSTRUCTOR  | Dedicated course creation form                 |
+| `/studio/course/:id`               | `StudioCourse`   | Yes  | INSTRUCTOR  | Module/chapter/video/quiz builder              |
+| `/studio/course/:id/analytics`     | `Analytics`      | Yes  | INSTRUCTOR  | Course analytics dashboard                     |
+| `/course/:id`                      | `CourseViewer`   | Yes  | Any         | Chapter viewer with video player + quizzes     |
+| `/admin`                           | `Admin`          | Yes  | ADMIN       | User directory + create user form              |
 
 ---
 
@@ -515,12 +616,13 @@ POST /admin/create-user                    # Create user with explicit roles
 
 ## 🌐 CORS Configuration
 
-| Setting          | Value                                              |
-| ---------------- | -------------------------------------------------- |
-| Allowed Origins  | `http://localhost:5173`, `http://localhost:4173`   |
-| Allowed Methods  | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` |
-| Allowed Headers  | `Authorization`, `Content-Type`, `Accept`          |
-| Max Age          | `3600` seconds                                     |
+| Setting          | Value                                                             |
+| ---------------- | ----------------------------------------------------------------- |
+| Allowed Origins  | `http://localhost:*`, `https://learnflow.laveshgaur.com`          |
+| Allowed Methods  | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`                |
+| Allowed Headers  | `Authorization`, `Content-Type`, `Accept`                         |
+| Credentials      | Allowed                                                           |
+| Max Age          | `3600` seconds                                                    |
 
 ---
 
