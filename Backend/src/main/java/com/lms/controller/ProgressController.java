@@ -196,6 +196,42 @@ public class ProgressController {
         return ResponseEntity.ok(result);
     }
 
+    // ───────────── Manual chapter completion ─────────────
+
+    /**
+     * POST /user/progress/chapter/{chapterId}/complete
+     * Allows the user to manually mark a chapter as complete.
+     * Designed for chapters that have no videos (text-only content).
+     */
+    @PostMapping("/chapter/{chapterId}/complete")
+    public ResponseEntity<?> markChapterComplete(@PathVariable int chapterId) {
+        User user = getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Chapter chapter = chapterService.getChapterById(chapterId);
+        if (chapter == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Chapter not found");
+        }
+
+        // Only allow manual completion if the chapter has no videos
+        List<Video> chapterVideos = videoService.getVideosByChapterId(chapterId);
+        if (chapterVideos != null && !chapterVideos.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("This chapter contains videos — it will be completed automatically when you watch them.");
+        }
+
+        ChapterProgress cp = progressService.markComplete(user, chapter);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("chapterId", chapterId);
+        result.put("completed", cp.isCompleted());
+        result.put("completedAt", cp.getCompletedAt() != null ? cp.getCompletedAt().toString() : null);
+
+        return ResponseEntity.ok(result);
+    }
+
     // ───────────── Helpers ─────────────
 
     private static double toDouble(Object val) {
