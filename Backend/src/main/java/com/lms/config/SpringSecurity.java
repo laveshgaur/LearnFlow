@@ -54,7 +54,7 @@ public class SpringSecurity {
                         .requestMatchers(HttpMethod.GET, "/courses", "/courses/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/user/**").authenticated()
-                        .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")
+                        .requestMatchers("/instructor/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
