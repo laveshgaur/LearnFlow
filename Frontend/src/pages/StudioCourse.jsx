@@ -146,7 +146,7 @@ export default function StudioCourse() {
       showSuccess('Module created successfully!')
       loadModules()
     } catch (e) {
-      const msg = e?.error || e?.message || 'Error creating module'
+      const msg = e?.body?.error || e?.message || 'Error creating module'
       setError(typeof msg === 'object' ? JSON.stringify(msg) : msg)
     }
   }
