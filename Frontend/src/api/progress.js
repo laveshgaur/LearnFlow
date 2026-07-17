@@ -29,6 +29,14 @@ export async function getVideoProgress(chapterId, token) {
 }
 
 /**
+ * POST /user/progress/chapter/{chapterId}/complete
+ * Manually marks a chapter (with no videos) as complete.
+ */
+export async function markChapterComplete(chapterId, token) {
+  return apiFetch(`/user/progress/chapter/${chapterId}/complete`, { method: 'POST', token })
+}
+
+/**
  * GET /instructor/analytics/{courseId}
  * Returns per-course analytics metrics (instructor only).
  */
