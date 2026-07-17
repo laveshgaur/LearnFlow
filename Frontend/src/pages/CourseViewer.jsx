@@ -3,7 +3,7 @@ import { useParams, Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import VideoPlayer from '../components/VideoPlayer.jsx'
 import { getModules, getChapters, getVideos } from '../api/modules.js'
-import { getCourseProgress, updateVideoProgress, getVideoProgress } from '../api/progress.js'
+import { getCourseProgress, updateVideoProgress, getVideoProgress, markChapterComplete } from '../api/progress.js'
 import { getStudentQuiz, submitQuiz, getQuizStatus } from '../api/quiz.js'
 
 const MAX_TITLE_LEN = 60
@@ -34,6 +34,7 @@ export default function CourseViewer() {
   const [activeChapter, setActiveChapter] = useState(null)
   const [videos, setVideos] = useState([])
   const [error, setError] = useState('')
+  const [markingComplete, setMarkingComplete] = useState(false)
 
   // Progress
   const [completedChapterIds, setCompletedChapterIds] = useState(new Set())
@@ -180,11 +181,27 @@ export default function CourseViewer() {
     setShowQuiz(false)
     setQuizData(null)
     setQuizResult(null)
+    setMarkingComplete(false)
     chapterEntryTime.current = Date.now()
     lastHeartbeat.current = Date.now()
     getVideos(courseId, activeModule.moduleId, chap.chapterId, credentials.token)
       .then(res => { setVideos(Array.isArray(res) ? res : []); loadVideoProgress(chap.chapterId) })
       .catch(console.error)
+  }
+
+  async function handleMarkComplete() {
+    if (!credentials || !activeChapter || markingComplete) return
+    setMarkingComplete(true)
+    try {
+      const res = await markChapterComplete(activeChapter.chapterId, credentials.token)
+      if (res && res.completed) {
+        setCompletedChapterIds(prev => new Set([...prev, activeChapter.chapterId]))
+      }
+    } catch (e) {
+      setError(e.message || 'Failed to mark chapter as complete')
+    } finally {
+      setMarkingComplete(false)
+    }
   }
 
   function handleVideoProgress({ videoId, watchPercent, currentTime, duration }) {
@@ -488,7 +505,7 @@ export default function CourseViewer() {
             {activeChapter.chapterDescription || 'No content provided for this chapter.'}
           </div>
 
-          {videos.length > 0 && (
+          {videos.length > 0 ? (
             <div style={{ marginTop: '2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <h3 style={{ margin: 0 }}>Videos</h3>
@@ -513,7 +530,26 @@ export default function CourseViewer() {
                 </div>
               ))}
             </div>
-          )}
+          ) : !isCurrentChapterComplete ? (
+            <div className="cv-mark-complete-section">
+              <div className="cv-mark-complete-icon">📄</div>
+              <p className="cv-mark-complete-text">
+                This chapter has no videos. Once you've finished reading, mark it as completed to continue.
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary cv-mark-complete-btn"
+                onClick={handleMarkComplete}
+                disabled={markingComplete}
+              >
+                {markingComplete ? (
+                  <><span className="cv-spinner" /> Marking…</>
+                ) : (
+                  <><span style={{ fontSize: '1.1rem' }}>✓</span> Mark as Completed</>
+                )}
+              </button>
+            </div>
+          ) : null}
         </article>
       )}
     </main>
