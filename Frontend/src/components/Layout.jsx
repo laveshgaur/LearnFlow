@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useTheme } from '../context/ThemeContext.jsx'
 import './Layout.css'
 
 const NAV_ITEMS = [
@@ -59,10 +60,18 @@ function NavItems({ onNavigate, isAuthenticated, isInstructor, isAdmin, credenti
   )
 }
 
+const THEME_META = {
+  system: { icon: '◐', label: 'System', next: 'light' },
+  light:  { icon: '☀', label: 'Light',  next: 'dark'  },
+  dark:   { icon: '●', label: 'Dark',   next: 'system'},
+}
+
 export default function Layout({ children }) {
   const { isAuthenticated, isInstructor, isAdmin, logout, credentials } = useAuth()
+  const { preference, cycleTheme } = useTheme()
   const [menuOpen, setMenuOpen] = useState(false)
   const closeMenu = () => setMenuOpen(false)
+  const themeMeta = THEME_META[preference] || THEME_META.system
 
   const initials = credentials?.username
     ? credentials.username.slice(0, 2).toUpperCase()
@@ -132,6 +141,18 @@ export default function Layout({ children }) {
         </nav>
 
         <div className="sb-footer">
+          {/* Theme toggle */}
+          <button
+            type="button"
+            className="sb-theme-toggle"
+            onClick={cycleTheme}
+            title={`Theme: ${themeMeta.label} — click for ${THEME_META[themeMeta.next].label}`}
+          >
+            <span className="sb-theme-icon" key={preference}>{themeMeta.icon}</span>
+            <span className="sb-theme-label">{themeMeta.label}</span>
+            <span className="sb-theme-hint">Theme</span>
+          </button>
+
           {isAuthenticated ? (
             <>
               <div className="sb-user-pill">
