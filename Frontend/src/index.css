@@ -82,6 +82,183 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ═══════════════════════════════════════════════
+   Light Theme Override
+═══════════════════════════════════════════════ */
+[data-theme="light"] {
+  /* ── Palette ── */
+  --bg-deep:      #f5f5fa;
+  --bg:           #ffffff;
+  --bg-elevated:  rgba(255, 255, 255, 0.9);
+  --surface:      rgba(99, 102, 241, 0.04);
+  --surface-hover:rgba(99, 102, 241, 0.08);
+
+  /* Borders */
+  --border:       rgba(0, 0, 0, 0.08);
+  --border-strong:rgba(0, 0, 0, 0.15);
+  --border-focus: rgba(99, 102, 241, 0.7);
+
+  /* Glass */
+  --glass-bg:     rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+  --glass-blur:   blur(24px);
+
+  /* Text */
+  --text:         #1a1a2e;
+  --text-muted:   #5c5c7a;
+  --text-dim:     #9999b3;
+
+  /* Brand colours — keep vibrant but slightly deeper for contrast */
+  --indigo:       #5b5ef0;
+  --indigo-light: #6366f1;
+  --indigo-dim:   rgba(99, 102, 241, 0.12);
+  --violet:       #7c3aed;
+  --cyan:         #0891b2;
+  --rose:         #e11d48;
+  --amber:        #d97706;
+  --emerald:      #059669;
+
+  /* Shadows — softer for light */
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.06);
+  --shadow:     0 8px 32px rgba(0,0,0,0.08);
+  --shadow-lg:  0 24px 64px rgba(0,0,0,0.1);
+  --glow-indigo:0 0 60px rgba(99,102,241,0.12);
+  --glow-cyan:  0 0 60px rgba(34,211,238,0.08);
+
+  color-scheme: light;
+}
+
+/* Light theme — body background */
+[data-theme="light"] body {
+  background: var(--bg-deep);
+}
+
+/* Light theme — remove dark gradient overlay */
+[data-theme="light"] body::before {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(99,102,241,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(167,139,250,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(34,211,238,0.03) 0%, transparent 70%);
+}
+
+/* Light sidebar */
+[data-theme="light"] .sidebar {
+  background: rgba(255, 255, 255, 0.85);
+  border-right-color: var(--border);
+}
+
+/* Light sidebar link hover */
+[data-theme="light"] .sb-link:hover {
+  background: rgba(99,102,241,0.06);
+}
+[data-theme="light"] .sb-link.is-active {
+  background: linear-gradient(90deg, rgba(99,102,241,0.12), rgba(99,102,241,0.04));
+  border-color: rgba(99,102,241,0.25);
+  color: var(--indigo);
+}
+
+/* Light brand text */
+[data-theme="light"] .brand-text {
+  background: linear-gradient(135deg, var(--indigo), var(--violet));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Light page heading gradient */
+[data-theme="light"] .page-header h1 {
+  background: linear-gradient(135deg, var(--text) 30%, var(--indigo));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Light hero */
+[data-theme="light"] .hero-marketing h1 {
+  background: linear-gradient(135deg, #1a1a2e 0%, #5b5ef0 50%, var(--violet) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Light mobile hamburger */
+[data-theme="light"] .mobile-menu-btn {
+  background: rgba(255,255,255,0.9);
+}
+
+/* Light burger lines */
+[data-theme="light"] .burger,
+[data-theme="light"] .burger::before,
+[data-theme="light"] .burger::after {
+  background: var(--text);
+}
+[data-theme="light"] .burger[data-open='true'] {
+  background: transparent;
+}
+
+/* Light card */
+[data-theme="light"] .card:hover {
+  border-color: rgba(99,102,241,0.2);
+  box-shadow: 0 0 40px rgba(99,102,241,0.08), var(--shadow);
+}
+
+/* Light scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.22);
+}
+
+/* Light selection */
+[data-theme="light"] ::selection {
+  background: rgba(99,102,241,0.2);
+  color: var(--text);
+}
+
+/* Light code blocks */
+[data-theme="light"] code {
+  background: rgba(99,102,241,0.08);
+  border-color: rgba(99,102,241,0.15);
+  color: var(--indigo);
+}
+
+/* Light user pill */
+[data-theme="light"] .sb-user-pill {
+  background: rgba(99,102,241,0.05);
+  border-color: var(--border);
+}
+
+/* Light theme toggle */
+[data-theme="light"] .sb-theme-toggle {
+  background: rgba(99,102,241,0.04);
+}
+[data-theme="light"] .sb-theme-toggle:hover {
+  background: rgba(99,102,241,0.1);
+}
+
+/* Light sidebar scrim */
+[data-theme="light"] .sidebar-scrim {
+  background: rgba(0,0,0,0.25);
+}
+
+/* Light auth pages */
+[data-theme="light"] .auth-page::before {
+  background:
+    radial-gradient(ellipse 60% 60% at 30% 40%, rgba(99,102,241,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 70% 60%, rgba(167,139,250,0.04) 0%, transparent 70%);
+}
+
+/* Light stat tile values */
+[data-theme="light"] .stat-tile .value,
+[data-theme="light"] .analytics-value {
+  background: linear-gradient(135deg, var(--indigo), var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; }
 
