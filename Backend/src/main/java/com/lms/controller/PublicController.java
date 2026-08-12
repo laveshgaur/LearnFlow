@@ -44,6 +44,19 @@ public class PublicController {
         if (!ValidityChecker.isValidUser(user)) {
             return new ResponseEntity<>("Invalid user data", HttpStatus.BAD_REQUEST);
         }
+
+        // Check for duplicate username
+        if (userService.getUserByUsername(request.userName()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(java.util.Map.of("message", "Username '" + request.userName() + "' is already taken. Please choose a different username."));
+        }
+
+        // Check for duplicate email
+        if (userService.getUserByEmail(request.email()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(java.util.Map.of("message", "An account with this email already exists."));
+        }
+
         User createdUser = userService.createUser(user);
         return new ResponseEntity<>(DtoMapper.toUserResponse(createdUser), HttpStatus.CREATED);
     }

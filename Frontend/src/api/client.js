@@ -78,6 +78,10 @@ export async function createUserAdmin(token, payload) {
   return apiFetch('/admin/create-user', { method: 'POST', token, body: payload })
 }
 
+export async function deleteUserAdmin(token, userId) {
+  return apiFetch(`/admin/delete-user/${userId}`, { method: 'DELETE', token })
+}
+
 /** Authenticated learner — enroll / purchase */
 export async function purchaseCourse(token, courseId) {
   return apiFetch(`/user/purchase-course/${courseId}`, { method: 'POST', token })

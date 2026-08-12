@@ -37,7 +37,20 @@ public class UserService {
         return userRepository.findByUserName(username);
     }
 
+    public User getUserByEmail(String email){
+        return userRepository.findByEmail(email);
+    }
+
     public User updateUser(User user){
         return userRepository.save(user);
+    }
+
+    public boolean existsById(String userId) {
+        return userRepository.existsById(userId);
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteUser(String userId) {
+        userRepository.deleteById(userId);
     }
 }

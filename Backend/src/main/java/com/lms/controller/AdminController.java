@@ -9,10 +9,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import com.lms.dto.request.CreateUserAdminRequest;
 import com.lms.dto.response.UserResponse;
@@ -61,6 +64,41 @@ public class AdminController {
             return new ResponseEntity<>(DtoMapper.toUserResponse(createdUser), HttpStatus.CREATED);
         }
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Deletes a user by their ID.
+     * Admins cannot delete their own account to prevent accidental lock-out.
+     */
+    @DeleteMapping("/delete-user/{userId}")
+    public ResponseEntity<?> deleteUser(@PathVariable String userId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userService.getUserByUsername(authentication.getName());
+
+        if (currentUser == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        // Prevent admin from deleting themselves
+        if (currentUser.getId().equals(userId)) {
+            return new ResponseEntity<>(
+                    Map.of("error", "You cannot delete your own admin account."),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (!userService.existsById(userId)) {
+            return new ResponseEntity<>(
+                    Map.of("error", "User not found with id: " + userId),
+                    HttpStatus.NOT_FOUND
+            );
+        }
+
+        userService.deleteUser(userId);
+        return new ResponseEntity<>(
+                Map.of("message", "User deleted successfully."),
+                HttpStatus.OK
+        );
     }
 
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
-import { listUsersAdmin, createUserAdmin } from '../api/client.js'
+import { listUsersAdmin, createUserAdmin, deleteUserAdmin } from '../api/client.js'
 
 export default function Admin() {
   const { credentials, isAuthenticated } = useAuth()
@@ -15,6 +15,7 @@ export default function Admin() {
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
   const [createSuccess, setCreateSuccess] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   const fetchUsers = async () => {
     setError('')
@@ -67,6 +68,22 @@ export default function Admin() {
       setCreateError(err.message || 'Error creating user.')
     } finally {
       setCreating(false)
+    }
+  }
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (!window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+      return
+    }
+    setDeletingId(userId)
+    try {
+      await deleteUserAdmin(credentials.token, userId)
+      fetchUsers()
+    } catch (err) {
+      const msg = err.body?.error || err.message || 'Error deleting user.'
+      alert(msg)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -194,6 +211,7 @@ export default function Admin() {
                   <th>Roles</th>
                   <th>Enrolled</th>
                   <th>Created</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -207,6 +225,16 @@ export default function Admin() {
                     </td>
                     <td>{Array.isArray(u.enrolledCourses) ? u.enrolledCourses.length : 0}</td>
                     <td>{Array.isArray(u.courses) ? u.courses.length : 0}</td>
+                    <td>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        disabled={deletingId === u.id || u.userName === credentials?.username}
+                        title={u.userName === credentials?.username ? 'Cannot delete yourself' : `Delete ${u.userName}`}
+                        onClick={() => handleDeleteUser(u.id, u.userName)}
+                      >
+                        {deletingId === u.id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

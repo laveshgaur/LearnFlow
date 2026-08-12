@@ -80,9 +80,11 @@ export default function Register() {
       const msg =
         typeof err.body === 'object' && err.body?.message
           ? err.body.message
-          : err.status === 400
-            ? 'Some fields are invalid. Check your username, email, or password format.'
-            : err.message || 'Could not create account. Try again.'
+          : err.status === 409
+            ? 'This username or email is already registered.'
+            : err.status === 400
+              ? 'Some fields are invalid. Check your username, email, or password format.'
+              : err.message || 'Could not create account. Try again.'
       setError(msg)
     } finally {
       setLoading(false)
