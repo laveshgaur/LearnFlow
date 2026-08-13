@@ -39,6 +39,11 @@ public class User {
     private LocalDateTime createdAt;
 
     @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+        name = "user_roles", 
+        joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id")
+    )
+    @Column(name = "role")
     private List<String> roles;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
